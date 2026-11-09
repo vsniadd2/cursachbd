@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: flexora-postgres
+    restart: unless-stopped
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-flexora}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flexora_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-flexora}
+    volumes:
+      - flexora_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-flexora} -d ${POSTGRES_DB:-flexora}']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: flexora-api
+    restart: unless-stopped
+    ports:
+      - '${API_PORT:-3001}:3001'
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-flexora}:${POSTGRES_PASSWORD:-flexora_secret}@postgres:5432/${POSTGRES_DB:-flexora}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-48h}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+
+volumes:
+  flexora_pg_data:

@@ -1,0 +1,38 @@
+/* Flexora Dashboard — from Magic Patterns */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --color-canvas: #efefef;
+  --color-shell: #f7f7f7;
+  --color-surface: #ffffff;
+  --color-line: #e9e9eb;
+  --color-ink: #17171a;
+  --color-ink-2: #4b4b52;
+  --color-ink-3: #8a8a92;
+  --color-brand: #ff6b2c;
+  --color-brand-2: #ff9a6b;
+  --color-brand-3: #ffc2a3;
+  --color-brand-4: #ffe2d4;
+  --color-brand-soft: #fff1ea;
+  --color-pos: #22b45e;
+  --color-pos-soft: #e8f8ee;
+  --color-cell: #f2f2f3;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}

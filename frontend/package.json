@@ -1,0 +1,46 @@
+{
+  "name": "flexora-frontend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "trustedDependencies": [
+    "esbuild",
+    "tree-sitter",
+    "tree-sitter-typescript"
+  ],
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-icons": "1.3.2",
+    "@radix-ui/react-slot": "^1.2.4",
+    "axios": "^1.13.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "4.1.0",
+    "framer-motion": "11.18.2",
+    "lucide-react": "0.577.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.2",
+    "recharts": "^3.4.1",
+    "tailwind-merge": "2.6.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@tailwindcss/upgrade": "4.3.1",
+    "@tailwindcss/vite": "4.3.1",
+    "@vitejs/plugin-react": "6.1.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2",
+    "tailwindcss": "4.3.1",
+    "typescript-eslint": "^8.46.4",
+    "typescript": "5.9.3",
+    "vite": "8.3.2"
+  }
+}
