@@ -1,42 +1,29 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { PageContent } from '@/components/app/PageContent'
 import { PageHeader } from '@/components/app/PageHeader'
-import { PageSection } from '@/components/app/PageSection'
+import { SettingsAccountForm } from '@/components/settings/SettingsAccountForm'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 
 export function SettingsPage() {
+  const { t } = useTranslation('pages')
   const navigate = useNavigate()
   const { user, logout } = useAuth()
 
   function handleLogout() {
-    logout()
-    navigate('/', { replace: true })
+    void logout().then(() => navigate('/', { replace: true }))
   }
 
   return (
     <PageContent>
-      <PageHeader title="Settings" description="Profile and security" />
-      <PageSection className="max-w-md space-y-3">
-        <div>
-          <p className="text-[11px] text-ink-2">Name</p>
-          <p className="text-[14px]">
-            {user?.firstName} {user?.lastName}
-          </p>
-        </div>
-        <div>
-          <p className="text-[11px] text-ink-2">Email</p>
-          <p className="text-[14px]">{user?.email}</p>
-        </div>
-        <div>
-          <p className="text-[11px] text-ink-2">Role</p>
-          <p className="text-[14px]">{user?.role.name}</p>
-        </div>
-        <Button type="button" variant="outline" onClick={handleLogout}>
-          Выйти
+      <PageHeader title={t('settings.title')} description={t('settings.description')} />
+      {user ? <SettingsAccountForm key={user.id} user={user} /> : null}
+      <div className="mt-6 max-w-2xl">
+        <Button type="button" variant="outline" className="h-[40px] rounded-[10px] text-[13px]" onClick={handleLogout}>
+          {t('settings.logout')}
         </Button>
-        <p className="text-[11px] text-ink-3">Password change will be available in a future release.</p>
-      </PageSection>
+      </div>
     </PageContent>
   )
 }

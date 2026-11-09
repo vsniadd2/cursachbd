@@ -1,14 +1,35 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 import { MoreHorizontal, ArrowUp } from 'lucide-react'
 
 export function StatCards() {
+  const { t } = useTranslation('components')
+  const { t: tc } = useTranslation('common')
+
+  const cards = [
+    { title: t('statCards.c1t'), value: '$42,860', delta: '14%', caption: t('statCards.c1c'), chart: <Bars /> },
+    { title: t('statCards.c2t'), value: '1,284', delta: '9%', caption: t('statCards.c2c'), chart: <Spark /> },
+    { title: t('statCards.c3t'), value: '236', delta: '12%', caption: t('statCards.c3c'), chart: <Ring /> },
+    {
+      title: t('statCards.c4t'),
+      value: '$42,860',
+      delta: '140%',
+      caption: t('statCards.c4c'),
+      tone: 'brand' as const,
+      chart: <Wave />,
+    },
+  ]
+
   return (
     <div className="mt-[19px] grid grid-cols-1 gap-[16px] sm:grid-cols-2 xl:grid-cols-4">
-      {CARDS.map((c, i) => (
-        <article key={i} className="flex h-[140px] flex-col rounded-[12px] border border-line bg-surface px-[12px] pt-[12px] pb-[12px]">
+      {cards.map((c, i) => (
+        <article
+          key={i}
+          className="flex h-[140px] flex-col rounded-[12px] border border-line bg-surface px-[12px] pt-[12px] pb-[12px]"
+        >
           <div className="flex items-center justify-between">
             <h3 className="text-[12.5px] text-ink-2">{c.title}</h3>
-            <button aria-label="More" className="text-ink-2">
+            <button aria-label={tc('more')} className="text-ink-2">
               <MoreHorizontal className="size-[15px]" strokeWidth={1.8} />
             </button>
           </div>
@@ -108,10 +129,3 @@ function Wave() {
     </svg>
   )
 }
-
-const CARDS: { title: string; value: string; delta: string; caption: string; tone?: 'brand'; chart: React.ReactNode }[] = [
-  { title: 'Active Pipeline Value', value: '$42,860', delta: '14%', caption: 'currently in progress', chart: <Bars /> },
-  { title: 'Active Pipeline Value', value: '1,284', delta: '9%', caption: 'campaigns & integrations', chart: <Spark /> },
-  { title: 'Deals Closed', value: '236', delta: '12%', caption: 'leads to prstomers', chart: <Ring /> },
-  { title: 'Active Pipeline Value', value: '$42,860', delta: '140%', caption: 'currently in progress', tone: 'brand', chart: <Wave /> },
-]

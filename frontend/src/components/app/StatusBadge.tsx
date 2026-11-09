@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 const STYLES: Record<string, string> = {
@@ -15,10 +16,16 @@ const STYLES: Record<string, string> = {
   PAID: 'bg-pos-soft text-pos',
   SENT: 'bg-brand-soft text-brand',
   OVERDUE: 'bg-brand-soft text-brand',
+  HIGH: 'bg-brand-soft text-brand',
+  MEDIUM: 'bg-cell text-ink-2',
+  LOW: 'bg-cell text-ink-3',
 }
 
 export function StatusBadge({ value }: { value: string }) {
+  const { t } = useTranslation('components')
   const key = value.replace(/\s+/g, '_').toUpperCase()
+  const label = t(`status.${key}`, { defaultValue: value.replace(/_/g, ' ') })
+
   return (
     <span
       className={cn(
@@ -26,7 +33,7 @@ export function StatusBadge({ value }: { value: string }) {
         STYLES[key] ?? 'bg-cell text-ink-2',
       )}
     >
-      {value.replace(/_/g, ' ')}
+      {label}
     </span>
   )
 }

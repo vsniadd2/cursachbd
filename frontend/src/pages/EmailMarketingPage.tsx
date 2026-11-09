@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { PageContent } from '@/components/app/PageContent'
 import { PageHeader } from '@/components/app/PageHeader'
 import { DataTable } from '@/components/app/DataTable'
@@ -9,15 +10,18 @@ const rows = [
 ]
 
 export function EmailMarketingPage() {
+  const { t } = useTranslation('pages')
+  const { t: tc } = useTranslation('common')
+
   return (
     <PageContent>
-      <PageHeader title="Email marketing" description="Broadcast performance" />
+      <PageHeader title={t('emailMarketing.title')} description={t('emailMarketing.description')} />
       <DataTable
         rows={rows}
         columns={[
-          { key: 'name', header: 'Campaign', cell: (r) => r.name },
-          { key: 'sent', header: 'Sent', cell: (r) => r.sent.toLocaleString() },
-          { key: 'open', header: 'Open rate', cell: (r) => r.open },
+          { key: 'name', header: tc('table.campaign'), cell: (r) => r.name },
+          { key: 'sent', header: tc('table.sent'), cell: (r) => r.sent.toLocaleString() },
+          { key: 'open', header: tc('table.openRate'), cell: (r) => r.open },
         ]}
       />
     </PageContent>

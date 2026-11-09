@@ -70,6 +70,20 @@ enum ActivityAction {
   COMMENT
 }
 
+enum InviteType {
+  EMAIL
+  PUBLIC_CODE
+  TEMP_ACCOUNT
+  LINK
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  CANCELLED
+  EXPIRED
+}
+
 model Role {
   id          String   @id @default(uuid()) @db.Uuid
   name        String   @unique
@@ -78,7 +92,17 @@ model Role {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  users User[]
+  users        User[]
+  teamInvites  TeamInvite[]
+}
+
+model CustomPermission {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  label       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Department {
@@ -88,34 +112,84 @@ model Department {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  parent   Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children Department[] @relation("DepartmentHierarchy")
-  users    User[]
+  parent       Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Department[] @relation("DepartmentHierarchy")
+  users        User[]
+  teamInvites  TeamInvite[]
 }
 
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique
-  passwordHash String
-  firstName    String
-  lastName     String
-  isActive     Boolean  @default(true)
-  roleId       String   @db.Uuid
-  departmentId String?  @db.Uuid
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String   @id @default(uuid()) @db.Uuid
+  email            String   @unique
+  passwordHash     String
+  firstName        String
+  lastName         String
+  publicCode       String   @unique
+  isActive         Boolean  @default(true)
+  roleId           String   @db.Uuid
+  departmentId     String?  @db.Uuid
+  managerId        String?  @db.Uuid
+  extraPermissions Json     @default("[]")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   role              Role              @relation(fields: [roleId], references: [id])
   department        Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  manager           User?             @relation("UserHierarchy", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports     User[]            @relation("UserHierarchy")
   projectMembers    ProjectMember[]
   assignedTasks     Task[]            @relation("TaskAssignee")
   taskComments      TaskComment[]
   taskAttachments   TaskAttachment[]
   notifications     Notification[]
   activityLogs      ActivityLog[]
+  refreshTokens     RefreshToken[]
+  invitesCreated    TeamInvite[]      @relation("InviteCreator")
+  inviteProvisioned TeamInvite?       @relation("InviteProvisionedUser")
 
   @@index([departmentId])
+  @@index([managerId])
   @@index([roleId])
+  @@index([publicCode])
+}
+
+model TeamInvite {
+  id                 String       @id @default(uuid()) @db.Uuid
+  type               InviteType
+  status             InviteStatus @default(PENDING)
+  email              String?
+  targetPublicCode   String?
+  tokenHash          String?      @unique
+  roleId             String?      @db.Uuid
+  departmentId       String?      @db.Uuid
+  extraPermissions   Json         @default("[]")
+  expiresAt          DateTime
+  createdById        String       @db.Uuid
+  provisionedUserId  String?      @unique @db.Uuid
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  createdBy        User        @relation("InviteCreator", fields: [createdById], references: [id])
+  provisionedUser  User?       @relation("InviteProvisionedUser", fields: [provisionedUserId], references: [id], onDelete: SetNull)
+  role             Role?       @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  department       Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([email])
+  @@index([targetPublicCode])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Client {

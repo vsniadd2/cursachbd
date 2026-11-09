@@ -16,6 +16,7 @@ export const INITIAL_AUTOMATIONS: Automation[] = [
 export const INITIAL_INTEGRATIONS: Integration[] = [
   { id: 'slack', name: 'Slack', connected: true, category: 'Communication' },
   { id: 'github', name: 'GitHub', connected: true, category: 'Development' },
+  { id: 'jira', name: 'Jira', connected: false, category: 'Development' },
   { id: 'stripe', name: 'Stripe', connected: false, category: 'Payments' },
 ]
 

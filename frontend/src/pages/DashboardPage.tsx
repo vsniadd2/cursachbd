@@ -1,4 +1,5 @@
 import { Filter, UploadCloud } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { StatCards } from '@/components/StatCards'
 import { RevenueChart } from '@/components/RevenueChart'
 import { ScoreGauge } from '@/components/ScoreGauge'
@@ -7,16 +8,18 @@ import { LeadActivity } from '@/components/LeadActivity'
 import { PageContent } from '@/components/app/PageContent'
 
 export function DashboardPage() {
+  const { t } = useTranslation('common')
+
   return (
     <PageContent>
       <div className="flex flex-wrap items-center justify-end gap-3 pb-4">
         <button className="flex items-center gap-[6px] rounded-[7px] border border-ink bg-surface px-[10px] py-[6px] text-[12.5px] transition-colors duration-150 hover:bg-shell">
           <Filter className="size-[14px]" strokeWidth={1.6} />
-          Filter
+          {t('filter')}
         </button>
         <button className="flex items-center gap-[6px] rounded-[7px] border border-ink bg-ink px-[10px] py-[6px] text-[12.5px] text-white transition-colors duration-150 hover:bg-[#2a2a2f]">
           <UploadCloud className="size-[14px]" strokeWidth={1.6} />
-          Export
+          {t('export')}
         </button>
       </div>
 

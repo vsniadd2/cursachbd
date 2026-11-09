@@ -1,14 +1,21 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 
 export function ScoreGauge({ score }: { score: number }) {
+  const { t } = useTranslation('components')
   const s = Math.max(0, Math.min(100, score))
   const split = START + (SWEEP * s) / 100
 
   return (
     <section className="flex flex-col rounded-[14px] border border-line bg-surface px-[18px] pt-[18px] pb-[20px]">
-      <h2 className="text-[15px] tracking-[-0.005em]">Sales Performance Score</h2>
+      <h2 className="text-[15px] tracking-[-0.005em]">{t('scoreGauge.title')}</h2>
 
-      <svg viewBox="0 0 310 200" className="mx-auto mt-[38px] w-full max-w-[318px]" role="img" aria-label={`Score ${s} of 100`}>
+      <svg
+        viewBox="0 0 310 200"
+        className="mx-auto mt-[38px] w-full max-w-[318px]"
+        role="img"
+        aria-label={t('scoreGauge.aria', { score: s })}
+      >
         <defs>
           <pattern id="gauge-hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <rect width="14" height="14" fill="#fff4ee" />
@@ -32,13 +39,11 @@ export function ScoreGauge({ score }: { score: number }) {
           {s}
         </text>
         <text x={CX} y={CY + 50} textAnchor="middle" fontSize="12.5" fill="#4b4b52" fontFamily="Inter, sans-serif">
-          For sales 100 Point
+          {t('scoreGauge.scale')}
         </text>
       </svg>
 
-      <p className="mt-auto pt-6 text-[12.5px] leading-[1.5] text-ink-2">
-        A scalable sales pipeline delivering consistent growth, predictable revenue, and business confidence.
-      </p>
+      <p className="mt-auto pt-6 text-[12.5px] leading-[1.5] text-ink-2">{t('scoreGauge.footer')}</p>
     </section>
   )
 }

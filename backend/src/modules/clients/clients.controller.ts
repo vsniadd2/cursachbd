@@ -3,7 +3,8 @@ import * as service from './clients.service.js'
 
 export const list: RequestHandler = async (req, res, next) => {
   try {
-    const data = await service.listClients(req.query.status as import('@prisma/client').ClientStatus | undefined)
+    const q = req.validatedQuery as { status?: import('@prisma/client').ClientStatus } | undefined
+    const data = await service.listClients(q?.status)
     res.json({ success: true, data: { items: data } })
   } catch (e) {
     next(e)

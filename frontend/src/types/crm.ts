@@ -49,7 +49,22 @@ export type TeamUser = {
   email: string
   firstName: string
   lastName: string
+  publicCode: string
+  departmentId: string | null
+  managerId: string | null
+  extraPermissions: string[]
+  isActive: boolean
+  department?: { id: string; name: string } | null
+  manager?: { id: string; firstName: string; lastName: string } | null
   role: { id: string; name: string }
+}
+
+export type Department = {
+  id: string
+  name: string
+  parentId: string | null
+  parent?: { id: string; name: string } | null
+  _count: { users: number }
 }
 
 export type RoleRow = {
@@ -57,4 +72,24 @@ export type RoleRow = {
   name: string
   description: string | null
   permissions: string[]
+  isSystem?: boolean
+}
+
+export type PermissionCatalog = {
+  builtin: string[]
+  custom: { id: string; slug: string; label: string; description: string | null }[]
+}
+
+export type TeamInviteRow = {
+  id: string
+  type: 'EMAIL' | 'PUBLIC_CODE' | 'TEMP_ACCOUNT' | 'LINK'
+  status: 'PENDING' | 'ACCEPTED' | 'CANCELLED' | 'EXPIRED'
+  email: string | null
+  targetPublicCode: string | null
+  expiresAt: string
+  createdAt: string
+  extraPermissions: string[]
+  role: { id: string; name: string } | null
+  department: { id: string; name: string } | null
+  provisionedUser: { id: string; email: string; firstName: string; lastName: string } | null
 }

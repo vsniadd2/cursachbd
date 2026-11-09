@@ -7,6 +7,10 @@ declare global {
         role: string
         permissions: string[]
       }
+      /** Parsed query (Express 5: req.query is read-only) */
+      validatedQuery?: unknown
+      /** Parsed JSON body when req.body cannot be reassigned */
+      validatedBody?: unknown
     }
   }
 }

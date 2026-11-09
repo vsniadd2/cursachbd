@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 export type Column<T> = {
@@ -19,14 +20,16 @@ export function DataTable<T extends { id: string }>({
   loading?: boolean
   empty?: ReactNode
 }) {
+  const { t } = useTranslation('common')
+
   if (loading) {
-    return <p className="py-8 text-center text-[12.5px] text-ink-2">Loading…</p>
+    return <p className="py-8 text-center text-[12.5px] text-ink-2">{t('loading')}</p>
   }
   if (!rows.length) {
     return empty ?? null
   }
   return (
-    <div className="overflow-x-auto rounded-[12px] border border-line">
+    <div className="-mx-1 overflow-x-auto rounded-[12px] border border-line px-1 sm:mx-0 sm:px-0">
       <table className="w-full min-w-[640px] border-collapse text-left text-[12.5px]">
         <thead>
           <tr className="border-b border-line bg-shell">
@@ -43,11 +46,11 @@ export function DataTable<T extends { id: string }>({
             ))}
           </tr>
         </thead>
-        <tbody className="text-[13px]">
+        <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-b border-line last:border-0 transition-colors hover:bg-shell/70">
+            <tr key={row.id} className="border-b border-line last:border-0 hover:bg-shell/40">
               {columns.map((c) => (
-                <td key={c.key} className={cn('px-4 py-3 text-ink', c.className)}>
+                <td key={c.key} className={cn('px-4 py-3', c.className)}>
                   {c.cell(row)}
                 </td>
               ))}

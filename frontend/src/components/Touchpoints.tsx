@@ -1,64 +1,60 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
-const SLICES = [
-  { label: 'Website', value: 23, fill: '#ffcdb5', text: '#3b2a22', dot: '#ff6b2c' },
-  { label: 'Email Campaigns', value: 32, fill: '#ff9a6b', text: '#ffffff', dot: '#ff9a6b' },
-  { label: 'Automation & Integrations', value: 45, fill: '#ff6b2c', text: '#ffffff', dot: '#ffcdb5' },
+const SLICE_KEYS = ['website', 'email', 'automation'] as const
+
+const SLICE_META = [
+  { value: 23, fill: '#ffcdb5', text: '#3b2a22', dot: '#ff6b2c' },
+  { value: 32, fill: '#ff9a6b', text: '#ffffff', dot: '#ff9a6b' },
+  { value: 45, fill: '#ff6b2c', text: '#ffffff', dot: '#ffcdb5' },
 ] as const
 
-const SLICE_ARCS = SLICES.reduce<{ from: number; to: number }[]>((acc, s) => {
+const SLICE_ARCS = SLICE_META.reduce<{ from: number; to: number }[]>((acc, s) => {
   const from = acc.length ? acc[acc.length - 1].to : -97
   acc.push({ from, to: from + s.value * 3.6 })
   return acc
 }, [])
 
 export function Touchpoints() {
+  const { t } = useTranslation('components')
   const [hover, setHover] = useState<number | null>(null)
+  const slices = SLICE_KEYS.map((k, i) => ({ ...SLICE_META[i], label: t(`touchpoints.${k}`) }))
 
   return (
     <section className="flex items-stretch justify-between gap-3 rounded-[14px] border border-line bg-surface px-[15px] py-[15px] sm:h-[176px]">
       <div className="flex min-w-0 flex-col justify-between">
-        <h2 className="text-[15px] tracking-[-0.005em]">Customer Touchpoints</h2>
+        <h2 className="text-[15px] tracking-[-0.005em]">{t('touchpoints.title')}</h2>
         <ul className="mt-4 space-y-[9px] pb-[18px]">
-          {SLICES.map((s, i) => (
+          {slices.map((s, i) => (
             <li
               key={s.label}
+              className="flex items-center gap-[7px] text-[12.5px]"
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
-              className="flex items-center gap-[8px] text-[12px] whitespace-nowrap text-ink-2"
             >
-              <span className="size-[6px] rounded-full" style={{ background: s.dot }} />
-              {s.label}
+              <span className="size-[7px] rounded-full" style={{ background: s.dot }} />
+              <span className={hover === i ? 'text-ink' : 'text-ink-2'}>{s.label}</span>
+              <span className="ml-auto tabular text-ink">{s.value}%</span>
             </li>
           ))}
         </ul>
       </div>
-
-      <svg viewBox="0 0 140 140" className="size-[134px] shrink-0 self-center" role="img" aria-label="Touchpoint share">
-        {SLICES.map((s, i) => {
+      <svg viewBox="-100 -100 200 200" className="size-[120px] shrink-0 self-center">
+        {slices.map((s, i) => {
           const { from, to } = SLICE_ARCS[i]
-          const mid = ((from + to) / 2) * (Math.PI / 180)
-          const lift = hover === i ? 3 : 0
+          const large = to - from > 180 ? 1 : 0
+          const start = polar(from)
+          const end = polar(to)
+          const d = `M 0 0 L ${start[0]} ${start[1]} A 100 100 0 ${large} 1 ${end[0]} ${end[1]} Z`
           return (
-            <g
+            <path
               key={s.label}
+              d={d}
+              fill={s.fill}
+              opacity={hover == null || hover === i ? 1 : 0.55}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
-              style={{ transform: `translate(${Math.cos(mid) * lift}px, ${Math.sin(mid) * lift}px)` }}
-              className="transition-transform duration-150 ease-out"
-            >
-              <path d={slice(from, to)} fill={s.fill} stroke="#fff" strokeWidth="1.2" />
-              <text
-                x={70 + Math.cos(mid) * 42}
-                y={70 + Math.sin(mid) * 42 + 4}
-                textAnchor="middle"
-                fontSize="11.5"
-                fontFamily="Inter, sans-serif"
-                fill={s.text}
-              >
-                {s.value}%
-              </text>
-            </g>
+            />
           )
         })}
       </svg>
@@ -66,10 +62,7 @@ export function Touchpoints() {
   )
 }
 
-function slice(from: number, to: number) {
-  const r = 66
-  const a = (from * Math.PI) / 180
-  const b = (to * Math.PI) / 180
-  const large = to - from > 180 ? 1 : 0
-  return `M70 70 L${70 + r * Math.cos(a)} ${70 + r * Math.sin(a)} A${r} ${r} 0 ${large} 1 ${70 + r * Math.cos(b)} ${70 + r * Math.sin(b)} Z`
+function polar(deg: number) {
+  const r = (deg * Math.PI) / 180
+  return [Math.cos(r) * 100, Math.sin(r) * 100]
 }

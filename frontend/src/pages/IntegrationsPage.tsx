@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PageContent } from '@/components/app/PageContent'
 import { PageHeader } from '@/components/app/PageHeader'
 import { PageSection } from '@/components/app/PageSection'
@@ -6,11 +7,12 @@ import { Button } from '@/components/ui/button'
 import { INITIAL_INTEGRATIONS, type Integration } from '@/mocks/marketing'
 
 export function IntegrationsPage() {
+  const { t } = useTranslation('pages')
   const [items, setItems] = useState<Integration[]>(INITIAL_INTEGRATIONS)
 
   return (
     <PageContent>
-      <PageHeader title="Integrations" description="Connected tools" />
+      <PageHeader title={t('integrations.title')} description={t('integrations.description')} />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((i) => (
           <PageSection key={i.id} className="flex flex-col gap-3">
@@ -25,7 +27,7 @@ export function IntegrationsPage() {
                 setItems((prev) => prev.map((x) => (x.id === i.id ? { ...x, connected: !x.connected } : x)))
               }
             >
-              {i.connected ? 'Disconnect' : 'Connect'}
+              {i.connected ? t('integrationsExtra.disconnect') : t('integrationsExtra.connect')}
             </Button>
           </PageSection>
         ))}

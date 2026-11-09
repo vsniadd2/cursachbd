@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PageContent } from '@/components/app/PageContent'
 import { PageHeader } from '@/components/app/PageHeader'
 import { PageSection } from '@/components/app/PageSection'
@@ -9,6 +10,8 @@ import type { Project } from '@/types/crm'
 const COLUMNS: Project['status'][] = ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED']
 
 export function PipelinePage() {
+  const { t } = useTranslation('pages')
+  const { t: ts } = useTranslation('components')
   const [projects, setProjects] = useState<Project[]>([])
 
   useEffect(() => {
@@ -24,11 +27,13 @@ export function PipelinePage() {
 
   return (
     <PageContent>
-      <PageHeader title="Pipeline board" description="Click a card to advance stage" />
+      <PageHeader title={t('pipeline.title')} description={t('pipeline.description')} />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {COLUMNS.map((status) => (
           <PageSection key={status} className="min-h-[280px] bg-shell/40 p-4">
-            <h3 className="mb-3 text-[12px] font-medium uppercase tracking-wide text-ink-2">{status.replace('_', ' ')}</h3>
+            <h3 className="mb-3 text-[12px] font-medium uppercase tracking-wide text-ink-2">
+              {ts(`status.${status}`)}
+            </h3>
             <ul className="space-y-2">
               {projects
                 .filter((p) => p.status === status)

@@ -1,20 +1,63 @@
-export function BrandLogo({ subtitle = 'Growth Plan' }: { subtitle?: string }) {
+import { cn } from '@/lib/utils'
+
+export function BrandLogo({
+  subtitle = 'Growth Plan',
+  centered = false,
+  size = 'sm',
+}: {
+  subtitle?: string
+  centered?: boolean
+  /** `lg` — крупный логотип в шапке лендинга у верхнего края */
+  size?: 'sm' | 'lg'
+}) {
+  const markSize = centered ? 'lg' : size
+
   return (
-    <div className="flex items-center gap-[8px]">
-      <LogoMark />
-      <div className="min-w-0">
-        <p className="text-[19px] leading-[1.05] font-medium tracking-[-0.01em] text-ink">Flexora</p>
-        <p className="text-[9.5px] text-ink-2">{subtitle}</p>
+    <div
+      className={cn(
+        'flex items-center transition-[gap] duration-300 ease-out',
+        centered && 'flex-col gap-3',
+        !centered && (markSize === 'lg' ? 'gap-[10px]' : 'gap-[8px]'),
+      )}
+    >
+      <LogoMark size={markSize} />
+      <div className={cn('min-w-0', centered && 'text-center')}>
+        <p
+          className={cn(
+            'font-medium tracking-[-0.01em] text-ink transition-[font-size] duration-300 ease-out',
+            centered && 'text-[22px] leading-tight',
+            !centered && markSize === 'lg' && 'text-[26px] leading-[1.05]',
+            !centered && markSize === 'sm' && 'text-[19px] leading-[1.05]',
+          )}
+        >
+          Flexora
+        </p>
+        <p
+          className={cn(
+            'text-ink-2 transition-[font-size] duration-300 ease-out',
+            centered && 'mt-1 text-[12px]',
+            !centered && markSize === 'lg' && 'text-[11px]',
+            !centered && markSize === 'sm' && 'text-[9.5px]',
+          )}
+        >
+          {subtitle}
+        </p>
       </div>
     </div>
   )
 }
 
-function LogoMark() {
+function LogoMark({ size }: { size: 'sm' | 'lg' }) {
   const rays = Array.from({ length: 11 }, (_, i) => -180 + (i * 180) / 10)
+  const box = size === 'lg' ? 'size-[48px] rounded-[11px]' : 'size-[30px] rounded-[7px]'
   return (
-    <span className="grid size-[30px] shrink-0 place-items-center overflow-hidden rounded-[7px] bg-brand">
-      <svg viewBox="0 0 30 30" className="size-[30px]">
+    <span
+      className={cn(
+        'grid shrink-0 place-items-center overflow-hidden bg-brand transition-[width,height,border-radius] duration-300 ease-out',
+        box,
+      )}
+    >
+      <svg viewBox="0 0 30 30" className={cn('transition-[width,height] duration-300 ease-out', size === 'lg' ? 'size-[48px]' : 'size-[30px]')}>
         {rays.map((a) => {
           const r = (a * Math.PI) / 180
           return (

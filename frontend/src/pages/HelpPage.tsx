@@ -1,22 +1,21 @@
+import { useTranslation } from 'react-i18next'
 import { PageContent } from '@/components/app/PageContent'
 import { PageHeader } from '@/components/app/PageHeader'
 import { PageSection } from '@/components/app/PageSection'
 
-const FAQ = [
-  { q: 'How do I add a lead?', a: 'Open Leads, enter a company name and click Add lead.' },
-  { q: 'How does the pipeline work?', a: 'Click a deal card to advance it to the next stage.' },
-  { q: 'Where are invoices?', a: 'Revenue lists all invoices synced from the API.' },
-]
+const FAQ_KEYS = ['q1', 'q2', 'q3'] as const
 
 export function HelpPage() {
+  const { t } = useTranslation('pages')
+
   return (
     <PageContent>
-      <PageHeader title="Help center" description="Quick answers" />
+      <PageHeader title={t('help.title')} description={t('help.description')} />
       <div className="space-y-3">
-        {FAQ.map((f) => (
-          <PageSection key={f.q}>
-            <p className="text-[13px] font-medium">{f.q}</p>
-            <p className="mt-1 text-[12px] text-ink-2">{f.a}</p>
+        {FAQ_KEYS.map((key) => (
+          <PageSection key={key}>
+            <p className="text-[13px] font-medium">{t(`helpFaq.${key}`)}</p>
+            <p className="mt-1 text-[12px] text-ink-2">{t(`helpFaq.a${key.slice(1)}`)}</p>
           </PageSection>
         ))}
       </div>

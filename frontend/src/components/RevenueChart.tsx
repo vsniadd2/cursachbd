@@ -1,14 +1,17 @@
 import React, { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { ArrowUp, ArrowDown } from 'lucide-react'
 
 export function RevenueChart() {
+  const { t } = useTranslation('components')
   const [hover, setHover] = useState(4) // May
 
   return (
-    <section className="flex flex-col rounded-[14px] border border-line bg-surface px-[18px] pt-[18px] pb-[16px]">
-      <h2 className="text-[15px] tracking-[-0.005em]">Revenue & Conversion Analytics</h2>
+    <section className="flex min-w-0 flex-col rounded-[14px] border border-line bg-surface px-4 pt-[18px] pb-[16px] sm:px-[18px]">
+      <h2 className="text-[15px] tracking-[-0.005em]">{t('revenueChart.title')}</h2>
 
-      <div className="mt-[18px] flex gap-[8px]">
+      <div className="mt-[18px] overflow-x-auto">
+        <div className="flex min-w-[280px] gap-[8px] sm:min-w-0">
         {/* Y axis */}
         <div className="flex w-[22px] shrink-0 flex-col pt-[24px]">
           <div className="relative h-[246px]">
@@ -33,14 +36,14 @@ export function RevenueChart() {
                 <span className="inline-flex items-center gap-[1px] rounded-[3px] bg-pos-soft px-[4px] py-[2px] text-[6.5px] text-pos">
                   <ArrowUp className="size-[6px]" strokeWidth={2.5} />14%
                 </span>
-                <span className="text-[9.5px] text-ink-2">May</span>
+                <span className="text-[9.5px] text-ink-2">{t('revenueChart.may')}</span>
               </div>
               <div className="flex items-center gap-[7px]">
                 <span className="text-[18px] leading-none font-medium tabular">$11.595</span>
                 <span className="inline-flex items-center gap-[1px] rounded-[3px] bg-brand-soft px-[4px] py-[2px] text-[6.5px] text-brand">
                   <ArrowDown className="size-[6px]" strokeWidth={2.5} />14%
                 </span>
-                <span className="text-[9.5px] text-ink-2">Jun</span>
+                <span className="text-[9.5px] text-ink-2">{t('revenueChart.jun')}</span>
               </div>
             </div>
 
@@ -95,6 +98,7 @@ export function RevenueChart() {
               </span>
             ))}
           </div>
+        </div>
         </div>
       </div>
     </section>

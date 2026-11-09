@@ -6,7 +6,10 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(16),
-  JWT_EXPIRES_IN: z.string().default('48h'),
+  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
+  /** @deprecated use JWT_ACCESS_EXPIRES_IN */
+  JWT_EXPIRES_IN: z.string().optional(),
   FRONTEND_URL: z.string().url().default('http://localhost:5173'),
 })
 
@@ -17,4 +20,8 @@ if (!parsed.success) {
   process.exit(1)
 }
 
-export const env = parsed.data
+const data = parsed.data
+export const env = {
+  ...data,
+  JWT_ACCESS_EXPIRES_IN: data.JWT_ACCESS_EXPIRES_IN || data.JWT_EXPIRES_IN || '15m',
+}

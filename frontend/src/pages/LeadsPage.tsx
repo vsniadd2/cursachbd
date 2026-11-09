@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PageContent } from '@/components/app/PageContent'
 import { PageHeader } from '@/components/app/PageHeader'
 import { DataTable } from '@/components/app/DataTable'
@@ -10,6 +11,8 @@ import { fetchClients, createClient } from '@/services/clients.service'
 import type { Client } from '@/types/crm'
 
 export function LeadsPage() {
+  const { t } = useTranslation('pages')
+  const { t: tc } = useTranslation('common')
   const [rows, setRows] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')
@@ -48,13 +51,18 @@ export function LeadsPage() {
   return (
     <PageContent>
       <PageHeader
-        title="Pipeline leads"
-        description="New prospects before conversion"
+        title={t('leads.title')}
+        description={t('leads.description')}
         actions={
-          <div className="flex gap-2">
-            <Input placeholder="Company name" value={name} onChange={(e) => setName(e.target.value)} className="w-48" />
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+            <Input
+              placeholder={t('leads.companyPlaceholder')}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full sm:w-48"
+            />
             <Button variant="brand" type="button" onClick={() => void addLead()}>
-              Add lead
+              {t('leads.addLead')}
             </Button>
           </div>
         }
@@ -62,12 +70,12 @@ export function LeadsPage() {
       <DataTable
         loading={loading}
         rows={rows}
-        empty={<EmptyState title="No leads yet" description="Create your first lead with Add lead." />}
+        empty={<EmptyState title={t('leads.emptyTitle')} description={t('leads.emptyDesc')} />}
         columns={[
-          { key: 'company', header: 'Company', cell: (r) => r.companyName },
-          { key: 'contact', header: 'Contact', cell: (r) => r.contactName ?? '—' },
-          { key: 'email', header: 'Email', cell: (r) => r.email ?? '—' },
-          { key: 'status', header: 'Status', cell: (r) => <StatusBadge value={r.status} /> },
+          { key: 'company', header: tc('table.company'), cell: (r) => r.companyName },
+          { key: 'contact', header: tc('table.contact'), cell: (r) => r.contactName ?? tc('dash') },
+          { key: 'email', header: tc('table.email'), cell: (r) => r.email ?? tc('dash') },
+          { key: 'status', header: tc('table.status'), cell: (r) => <StatusBadge value={r.status} /> },
         ]}
       />
     </PageContent>

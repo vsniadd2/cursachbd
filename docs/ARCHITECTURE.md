@@ -58,10 +58,11 @@ flowchart TB
 
 ## Аутентификация
 
-1. **Register / Login** — bcrypt для паролей, JWT (`JWT_SECRET`, `JWT_EXPIRES_IN`).
-2. Payload JWT: `sub`, `email`, `role`, `permissions`.
-3. **GET /auth/me** — загрузка пользователя с ролью из БД.
-4. **authorize(...)** — проверка permissions; `*` у ADMIN.
+1. **Register / Login** — bcrypt; выдача **access JWT** (короткий, `JWT_ACCESS_EXPIRES_IN`) и **opaque refresh** (хеш в таблице `RefreshToken`).
+2. Payload access: `sub`, `email`, `role`, `permissions`, `type: access`.
+3. **POST /auth/refresh** — ротация refresh и новый access; **POST /auth/logout** — отзыв refresh.
+4. **GET /auth/me** — профиль по Bearer access.
+5. **authorize(...)** — проверка permissions; `*` у ADMIN.
 
 Запись в `ActivityLog` при регистрации, входе (LOGIN).
 

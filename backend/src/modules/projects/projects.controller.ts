@@ -8,7 +8,10 @@ function paramId(req: { params: { id?: string | string[] } }) {
 
 export const list: RequestHandler = async (req, res, next) => {
   try {
-    const q = req.query as { status?: import('@prisma/client').ProjectStatus; clientId?: string }
+    const q = (req.validatedQuery ?? req.query) as {
+      status?: import('@prisma/client').ProjectStatus
+      clientId?: string
+    }
     const items = await service.listProjects(q)
     res.json({ success: true, data: { items } })
   } catch (e) {

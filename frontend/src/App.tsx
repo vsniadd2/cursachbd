@@ -18,10 +18,10 @@ import { CampaignsPage } from '@/pages/CampaignsPage'
 import { EmailMarketingPage } from '@/pages/EmailMarketingPage'
 import { IntegrationsPage } from '@/pages/IntegrationsPage'
 import { TeamPage } from '@/pages/TeamPage'
-import { RolesPage } from '@/pages/RolesPage'
 import { HelpPage } from '@/pages/HelpPage'
 import { FeedbackPage } from '@/pages/FeedbackPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { PricingPage } from '@/pages/PricingPage'
 import { PublicHome } from '@/routes/PublicHome'
 
 export default function App() {
@@ -52,10 +52,11 @@ export default function App() {
         <Route path="email-marketing" element={<EmailMarketingPage />} />
         <Route path="integrations" element={<IntegrationsPage />} />
         <Route path="team" element={<TeamPage />} />
-        <Route path="roles" element={<RolesPage />} />
+        <Route path="roles" element={<Navigate to="/team?tab=groups" replace />} />
         <Route path="help" element={<HelpPage />} />
         <Route path="feedback" element={<FeedbackPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="pricing" element={<PricingPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

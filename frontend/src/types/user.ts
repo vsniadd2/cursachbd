@@ -9,11 +9,16 @@ export type User = {
   email: string
   firstName: string
   lastName: string
+  publicCode: string
   isActive: boolean
+  extraPermissions: string[]
+  effectivePermissions: string[]
   role: UserRole
 }
 
 export type AuthResponse = {
   accessToken: string
+  refreshToken: string
+  expiresIn: number
   user: User
 }

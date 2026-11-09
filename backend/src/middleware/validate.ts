@@ -10,10 +10,16 @@ export function validate(schemas: ValidationSchemas): RequestHandler {
   return (req, _res, next) => {
     try {
       if (schemas.body) {
-        req.body = schemas.body.parse(req.body)
+        const parsed = schemas.body.parse(req.body)
+        req.validatedBody = parsed
+        try {
+          req.body = parsed
+        } catch {
+          /* Express 5 may expose read-only body */
+        }
       }
       if (schemas.query) {
-        req.query = schemas.query.parse(req.query) as typeof req.query
+        req.validatedQuery = schemas.query.parse(req.query)
       }
       next()
     } catch (err) {

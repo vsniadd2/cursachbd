@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { TOKEN_KEY } from '@/lib/api/client'
+import { getAccessToken, getRefreshToken } from '@/lib/api/tokens'
 import * as authService from '@/services/auth.service'
-import type { RegisterPayload, LoginPayload } from '@/services/auth.service'
+import type { RegisterPayload, LoginPayload, UpdateProfilePayload } from '@/services/auth.service'
 import type { User } from '@/types/user'
 
 type AuthContextValue = {
@@ -10,7 +10,8 @@ type AuthContextValue = {
   isAuthenticated: boolean
   login: (payload: LoginPayload) => Promise<void>
   register: (payload: RegisterPayload) => Promise<void>
-  logout: () => void
+  logout: () => Promise<void>
+  updateProfile: (payload: UpdateProfilePayload) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -22,8 +23,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let active = true
     ;(async () => {
-      const token = localStorage.getItem(TOKEN_KEY)
-      if (!token) {
+      const access = getAccessToken()
+      const refresh = getRefreshToken()
+      if (!access && !refresh) {
         if (active) {
           setUser(null)
           setIsLoading(false)
@@ -31,6 +33,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
       try {
+        if (!access && refresh) {
+          await authService.refreshSession()
+        }
         const me = await authService.fetchMe()
         if (active) setUser(me)
       } catch {
@@ -55,9 +60,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(result.user)
   }, [])
 
-  const logout = useCallback(() => {
-    authService.logoutLocal()
+  const logout = useCallback(async () => {
+    await authService.logoutRemote()
     setUser(null)
+  }, [])
+
+  const updateProfile = useCallback(async (payload: UpdateProfilePayload) => {
+    const updated = await authService.updateProfile(payload)
+    setUser(updated)
   }, [])
 
   const value = useMemo(
@@ -68,8 +78,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       register,
       logout,
+      updateProfile,
     }),
-    [user, isLoading, login, register, logout],
+    [user, isLoading, login, register, logout, updateProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
