@@ -28,11 +28,12 @@ export function RolesPage() {
   return (
     <PageContent>
       <PageHeader title={t('roles.title')} description={t('roles.description')} />
-      <nav className="mb-5 flex flex-wrap gap-2 border-b border-line pb-3" aria-label={t('roles.tabsAria')}>
+      <nav className="workspace-toolbar mb-5 flex flex-wrap gap-2" aria-label={t('roles.tabsAria')}>
         {TABS.map((key) => (
           <button
             key={key}
             type="button"
+            aria-pressed={tab === key}
             onClick={() => setTab(key)}
             className={cn(
               'rounded-full border px-4 py-1.5 text-[13px] font-medium transition-colors',
@@ -43,10 +44,12 @@ export function RolesPage() {
           </button>
         ))}
       </nav>
-      {tab === 'roles' && <RolesCatalogTab />}
-      {tab === 'groups' && <TeamRoleGroupsTab />}
-      {tab === 'subgroups' && <TeamSubgroupsTab />}
-      {tab === 'invites' && <TeamInvitesTab />}
+      <div key={tab} className="workspace-enter">
+        {tab === 'roles' && <RolesCatalogTab />}
+        {tab === 'groups' && <TeamRoleGroupsTab />}
+        {tab === 'subgroups' && <TeamSubgroupsTab />}
+        {tab === 'invites' && <TeamInvitesTab />}
+      </div>
     </PageContent>
   )
 }

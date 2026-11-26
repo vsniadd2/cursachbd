@@ -1,10 +1,13 @@
 import { SidebarNav } from '@/components/app/SidebarNav'
+import type { NavBadges } from '@/hooks/useNavBadges'
 import { cn } from '@/lib/utils'
 
 export function Sidebar({
+  badges,
   compact,
   onToggleCompact,
 }: {
+  badges: NavBadges
   compact?: boolean
   onToggleCompact?: () => void
 }) {
@@ -15,7 +18,7 @@ export function Sidebar({
         compact ? 'w-[72px]' : 'w-[237px]',
       )}
     >
-      <SidebarNav className="h-full" compact={compact} onToggleCompact={onToggleCompact} />
+      <SidebarNav badges={badges} className="h-full" compact={compact} onToggleCompact={onToggleCompact} />
     </aside>
   )
 }

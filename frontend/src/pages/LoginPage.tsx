@@ -1,5 +1,6 @@
 import { useWords } from '@/lib/product'
 import { useEffect, useState } from 'react'
+import { isAxiosError } from 'axios'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -31,14 +32,21 @@ export function LoginPage() {
     if (isAuthenticated) navigate(from, { replace: true })
   }, [isAuthenticated, from, navigate])
 
-  async function submitCredentials(nextEmail: string, nextPassword: string) {
+  async function submitCredentials(nextEmail: string, nextPassword: string, demo = false) {
     setError(null)
     setPending(true)
     try {
       await login({ email: nextEmail, password: nextPassword })
       navigate(from, { replace: true })
-    } catch {
-      setError(t('badCredentials'))
+    } catch (err) {
+      const status = isAxiosError(err) ? err.response?.status : undefined
+      if (status === 401) {
+        setError(t(demo ? 'demoUnavailable' : 'badCredentials'))
+      } else if (status === 400) {
+        setError(t('loginInvalidInput'))
+      } else {
+        setError(t('loginUnavailable'))
+      }
     } finally {
       setPending(false)
     }
@@ -52,7 +60,7 @@ export function LoginPage() {
   async function onDemoLogin() {
     setEmail(DEMO_EMAIL)
     setPassword(DEMO_PASSWORD)
-    await submitCredentials(DEMO_EMAIL, DEMO_PASSWORD)
+    await submitCredentials(DEMO_EMAIL, DEMO_PASSWORD, true)
   }
 
   return (
@@ -61,20 +69,20 @@ export function LoginPage() {
       showLangToggle
       footer={
         <p className="text-center text-[11px] leading-relaxed text-ink-2">
-          {t('demo')} <span className="tabular text-ink">admin@flexora.local</span> /{' '}
-          <span className="tabular">admin123</span>
+          {t('demo')} <span className="tabular text-ink">{DEMO_EMAIL}</span> /{' '}
+          <span className="tabular">{DEMO_PASSWORD}</span>
         </p>
       }
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-5">
         <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-[.18em] text-indigo-500">
+          <p className="mb-2 text-xs font-medium uppercase tracking-[.18em] text-brand-strong">
             {w('Рады видеть вас снова', 'Welcome back')}
           </p>
           <h1 className="text-3xl font-medium tracking-tight">
             {w('С возвращением.', 'Make yourself at home.')}
           </h1>
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-ink-2">
             {w(
               'Ваша команда и всё важное — уже здесь.',
               'Your team and everything that matters, right here.',
@@ -107,7 +115,7 @@ export function LoginPage() {
             required
           />
         </div>
-        {error && <p className="text-center text-[12px] text-brand">{error}</p>}
+        {error && <p role="alert" className="text-center text-[12px] text-brand">{error}</p>}
         <Button
           type="submit"
           variant="brand"

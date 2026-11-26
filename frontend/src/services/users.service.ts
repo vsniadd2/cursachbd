@@ -2,8 +2,8 @@ import { apiClient } from '@/lib/api/client'
 import type { ApiSuccess } from '@/types/api'
 import type { TeamUser } from '@/types/crm'
 
-export async function fetchUsers(params?: { query?: string; kind?: 'email' | 'publicCode' }) {
-  const { data } = await apiClient.get<ApiSuccess<{ items: TeamUser[] }>>('/users', { params })
+export async function fetchUsers(params?: { query?: string; kind?: 'email' | 'publicCode' }, signal?: AbortSignal) {
+  const { data } = await apiClient.get<ApiSuccess<{ items: TeamUser[] }>>('/users', { params, signal })
   return data.data.items
 }
 

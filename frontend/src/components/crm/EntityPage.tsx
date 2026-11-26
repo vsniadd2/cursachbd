@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Download, Plus, RefreshCw, Search } from 'lucide-react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { apiClient } from '@/lib/api/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { userCan } from '@/lib/auth/permissions'
 import { useWords, errorText, exportCsv } from '@/lib/product'
 import { PageContent } from '@/components/app/PageContent'
 import { PageHeader } from '@/components/app/PageHeader'
+import { PageFeedback } from '@/components/app/PageFeedback'
 import { StatusBadge } from '@/components/app/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,22 +30,9 @@ const clients: Field[] = [
   { key: 'status', ru: 'Статус', en: 'Status', options: ['LEAD', 'ACTIVE', 'INACTIVE', 'CHURNED'] },
   { key: 'notes', ru: 'Заметки', en: 'Notes', type: 'textarea' },
 ]
-const projects: Field[] = [
-  { key: 'name', ru: 'Название сделки', en: 'Deal name', required: true },
-  { key: 'clientId', ru: 'Клиент', en: 'Client', source: 'clients', required: true },
-  { key: 'budget', ru: 'Бюджет (USD)', en: 'Budget (USD)', type: 'number' },
-  {
-    key: 'status',
-    ru: 'Стадия',
-    en: 'Stage',
-    options: ['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'],
-  },
-  { key: 'priority', ru: 'Приоритет', en: 'Priority', options: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] },
-  { key: 'description', ru: 'Описание', en: 'Description', type: 'textarea' },
-]
 const tasks: Field[] = [
   { key: 'title', ru: 'Задача', en: 'Task', required: true },
-  { key: 'projectId', ru: 'Сделка', en: 'Deal', source: 'projects', required: true },
+  { key: 'projectId', ru: 'Проект', en: 'Project', source: 'projects', required: true },
   { key: 'assigneeId', ru: 'Исполнитель', en: 'Assignee', source: 'users' },
   {
     key: 'status',
@@ -57,7 +47,7 @@ const tasks: Field[] = [
 const invoices: Field[] = [
   { key: 'invoiceNumber', ru: 'Номер счёта', en: 'Invoice number', required: true },
   { key: 'clientId', ru: 'Клиент', en: 'Client', source: 'clients', required: true },
-  { key: 'projectId', ru: 'Сделка', en: 'Deal', source: 'projects' },
+  { key: 'projectId', ru: 'Проект', en: 'Project', source: 'projects' },
   { key: 'amount', ru: 'Сумма', en: 'Amount', type: 'number', required: true },
   { key: 'currency', ru: 'Валюта', en: 'Currency', options: ['USD', 'EUR', 'BYN'] },
   { key: 'status', ru: 'Статус', en: 'Status', options: ['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED'] },
@@ -67,7 +57,6 @@ const invoices: Field[] = [
 const configs = {
   leads: { endpoint: 'clients', ru: 'Лиды', en: 'Leads', fields: clients, status: 'LEAD' },
   customers: { endpoint: 'clients', ru: 'Клиенты', en: 'Customers', fields: clients, status: 'ACTIVE' },
-  deals: { endpoint: 'projects', ru: 'Сделки', en: 'Deals', fields: projects, status: 'PLANNING' },
   tasks: { endpoint: 'tasks', ru: 'Задачи', en: 'Tasks', fields: tasks, status: 'TODO' },
   revenue: {
     endpoint: 'invoices',
@@ -79,15 +68,31 @@ const configs = {
 }
 const control = 'w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink'
 function label(row: Row) {
-  return String(
-    row.companyName ?? row.name ?? [row.firstName, row.lastName].filter(Boolean).join(' ') ?? row.id,
-  )
+  const name = [row.firstName, row.lastName].filter(Boolean).join(' ')
+  return String(row.companyName ?? row.name ?? (name || row.id || '—'))
 }
+
+const relationByField: Record<string, string> = {
+  clientId: 'client',
+  projectId: 'project',
+  assigneeId: 'assignee',
+}
+
 export function EntityPage({ kind }: { kind: keyof typeof configs }) {
   const cfg = configs[kind],
     w = useWords(),
     { user } = useAuth()
   const canWrite = userCan(user, `${cfg.endpoint}:write`)
+  const canRead = userCan(user, `${cfg.endpoint}:read`)
+  const canReadProjects = userCan(user, 'projects:read')
+  const [urlFilters] = useSearchParams()
+  const projectFilter = (kind === 'tasks' || kind === 'revenue') ? urlFilters.get('projectId') : null
+  const taskFilter = kind === 'tasks' ? urlFilters.get('taskId') : null
+  const clientProjects = kind === 'customers' && canReadProjects
+  const unavailableField = cfg.fields.find(
+    (f) => f.required && f.source && !userCan(user, `${f.source}:read`),
+  )
+  const formElement = useRef<HTMLFormElement>(null)
   const [rows, setRows] = useState<Row[]>([]),
     [refs, setRefs] = useState<Record<string, Row[]>>({})
   const [loading, setLoading] = useState(true),
@@ -100,12 +105,27 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
     [status, setStatus] = useState(kind === 'leads' || kind === 'customers' ? cfg.status : '')
   const [page, setPage] = useState(0),
     [deleting, setDeleting] = useState<string | null>(null)
+  const formOpen = form !== null
+  useLayoutEffect(() => {
+    if (!formOpen) return
+    formElement.current?.scrollIntoView({ block: 'nearest' })
+    formElement.current?.querySelector<HTMLElement>('input, select, textarea')?.focus({ preventScroll: true })
+  }, [formOpen, editing])
+
   const load = useCallback(async () => {
+    if (!canRead) return
+    setLoading(true)
+    setError('')
     try {
-      const { data } = await apiClient.get(`/${cfg.endpoint}`)
-      setError('')
+      const { data } = await apiClient.get(`/${cfg.endpoint}`, { params: projectFilter ? { projectId: projectFilter } : undefined })
       setRows(data.data.items)
-      const sources = [...new Set(cfg.fields.flatMap((f) => (f.source ? [f.source] : [])))]
+      const sources = [
+        ...new Set(
+          cfg.fields.flatMap((f) =>
+            canWrite && f.source && userCan(user, `${f.source}:read`) ? [f.source] : [],
+          ),
+        ),
+      ]
       const entries = await Promise.all(
         sources.map(async (s) => [s, (await apiClient.get(`/${s}`)).data.data.items] as const),
       )
@@ -115,7 +135,7 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
     } finally {
       setLoading(false)
     }
-  }, [cfg])
+  }, [canRead, canWrite, cfg, projectFilter, user])
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Initial HTTP fetch; updates occur only after the asynchronous response.
     void load()
@@ -124,6 +144,7 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
     setEditing(row?.id ?? null)
     setError('')
     setMessage('')
+    const initialProject = row ? undefined : refs.projects?.find((project) => project.id === projectFilter)
     setForm(
       Object.fromEntries(
         cfg.fields.map((f) => [
@@ -131,6 +152,10 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
           row?.[f.key] == null
             ? f.key === 'status'
               ? cfg.status
+              : f.key === 'projectId' && initialProject
+                ? initialProject.id
+              : f.key === 'clientId' && initialProject
+                ? String(initialProject.clientId)
               : f.key === 'priority'
                 ? 'MEDIUM'
                 : (f.options?.[0] ?? '')
@@ -140,15 +165,15 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
     )
   }
   async function save() {
-    if (!form) return
+    if (!form || busy) return
     setBusy(true)
     setError('')
     const payload: Record<string, unknown> = {}
     for (const f of cfg.fields) {
+      if (f.source && !userCan(user, `${f.source}:read`)) continue
       const v = form[f.key]?.trim() ?? ''
       if (f.type === 'number') {
         if (v) payload[f.key] = Number(v)
-        else if (f.key === 'budget') payload[f.key] = null
       } else if (f.type === 'date') payload[f.key] = v ? new Date(`${v}T12:00:00.000Z`).toISOString() : null
       else if (f.source) {
         if (v) payload[f.key] = v
@@ -159,8 +184,8 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
       if (editing) await apiClient.patch(`/${cfg.endpoint}/${editing}`, payload)
       else await apiClient.post(`/${cfg.endpoint}`, payload)
       setForm(null)
-      setMessage(w('Сохранено', 'Saved'))
       await load()
+      setMessage(w('Сохранено', 'Saved'))
       window.dispatchEvent(new Event('crm:changed'))
     } catch (e) {
       setError(errorText(e))
@@ -169,8 +194,10 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
     }
   }
   async function remove() {
+    if (!deleting || busy) return
     setBusy(true)
     setError('')
+    setMessage('')
     try {
       await apiClient.delete(`/${cfg.endpoint}/${deleting}`)
       setDeleting(null)
@@ -183,36 +210,68 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
     }
   }
   const filtered = rows.filter(
-    (r) => (!status || r.status === status) && JSON.stringify(r).toLowerCase().includes(query.toLowerCase()),
+    (r) =>
+      (!taskFilter || r.id === taskFilter) &&
+      (!status || r.status === status) &&
+      JSON.stringify(r).toLowerCase().includes(query.toLowerCase()),
   )
   const currentPage = Math.min(page, Math.max(0, Math.ceil(filtered.length / 10) - 1))
+  if (!canRead) {
+    return (
+      <PageContent>
+        <PageHeader title={w(cfg.ru, cfg.en)} />
+        <PageFeedback state="empty">
+          {w('У вашей роли нет доступа к этому разделу.', 'Your role cannot access this section.')}
+        </PageFeedback>
+      </PageContent>
+    )
+  }
+
   return (
     <PageContent>
       <PageHeader
         title={w(cfg.ru, cfg.en)}
-        description={w('Данные команды сохраняются в базе', 'Team data is saved in the database')}
         actions={
           canWrite && (
-            <Button variant="brand" onClick={() => open()}>
+            <Button
+              variant="brand"
+              disabled={loading || busy || Boolean(unavailableField)}
+              onClick={() => open()}
+            >
+              <Plus className="size-4" aria-hidden="true" />
               {w('Создать', 'Create')}
             </Button>
           )
         }
       />
-      <div className="mb-4 flex flex-wrap gap-3">
-        <Input
-          aria-label={w('Поиск', 'Search')}
-          placeholder={w('Поиск…', 'Search…')}
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value)
-            setPage(0)
-          }}
-          className="max-w-xs"
-        />
+      {canWrite && unavailableField && (
+        <PageFeedback state="empty" className="mb-4">
+          {w(
+            `Для создания записи нужен доступ к полю «${unavailableField.ru}».`,
+            `Creating a record requires access to the ${unavailableField.en} field.`,
+          )}
+        </PageFeedback>
+      )}
+      <div className="workspace-toolbar mb-4 flex flex-wrap gap-2">
+        <div className="relative min-w-0 grow sm:max-w-xs">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-2"
+            aria-hidden="true"
+          />
+          <Input
+            aria-label={w('Поиск', 'Search')}
+            placeholder={w('Поиск…', 'Search…')}
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setPage(0)
+            }}
+            className="w-full pl-9"
+          />
+        </div>
         <select
           aria-label={w('Фильтр статуса', 'Status filter')}
-          className={control + ' max-w-48'}
+          className={control + ' max-w-48 grow sm:grow-0'}
           value={status}
           onChange={(e) => {
             setStatus(e.target.value)
@@ -228,33 +287,39 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
         </select>
         <Button
           variant="outline"
-          disabled={!filtered.length}
+          disabled={loading || !filtered.length}
           onClick={() => exportCsv(`${kind}.csv`, filtered)}
         >
+          <Download className="size-4" aria-hidden="true" />
           {w('Экспорт CSV', 'Export CSV')}
         </Button>
-        <Button variant="outline" disabled={loading} onClick={() => void load()}>
+        <Button variant="outline" disabled={loading || busy} onClick={() => void load()}>
+          <RefreshCw className="size-4" aria-hidden="true" />
           {w('Обновить', 'Refresh')}
         </Button>
       </div>
-      {error && (
-        <div
-          role="alert"
-          className="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800"
-        >
-          {error}
+      {projectFilter && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-ink-2">{w('Показаны записи проекта', 'Showing records for one project')}</span>
+          {canReadProjects && <Button asChild variant="outline" size="sm"><Link to={`/projects/${projectFilter}`}>{w('Открыть проект', 'Open project')}</Link></Button>}
+          <Button asChild variant="ghost" size="sm"><Link to={kind === 'revenue' ? '/revenue' : '/tasks'}>{w('Показать все', 'Show all')}</Link></Button>
         </div>
       )}
+      {error && (
+        <PageFeedback state="error" className="mb-4">
+          {error}
+        </PageFeedback>
+      )}
       {message && (
-        <p role="status" className="mb-3 text-sm text-pos">
+        <PageFeedback state="success" className="mb-4">
           {message}
-        </p>
+        </PageFeedback>
       )}
       {deleting && (
         <div
           role="alertdialog"
           aria-label={w('Подтверждение удаления', 'Confirm deletion')}
-          className="mb-4 rounded-xl border border-line bg-surface p-4"
+          className="workspace-enter workspace-surface mb-4 rounded-xl border border-danger-line bg-danger-soft p-4"
         >
           <p className="mb-3">
             {w(
@@ -272,7 +337,8 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
       )}
       {form && (
         <form
-          className="mb-6 rounded-xl border border-line bg-surface p-5"
+          ref={formElement}
+          className="workspace-enter workspace-surface mb-6 rounded-xl border border-line bg-surface p-4 sm:p-5"
           onSubmit={(e) => {
             e.preventDefault()
             void save()
@@ -290,6 +356,7 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
                   <select
                     aria-label={w(f.ru, f.en)}
                     className={control}
+                    disabled={Boolean(f.source && !userCan(user, `${f.source}:read`))}
                     required={f.required}
                     value={form[f.key]}
                     onChange={(e) =>
@@ -320,7 +387,7 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
                   <textarea
                     aria-label={w(f.ru, f.en)}
                     className={control}
-                    maxLength={f.key === 'description' ? 2000 : 2000}
+                    maxLength={2000}
                     value={form[f.key]}
                     onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
                   />
@@ -353,7 +420,7 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
       {kind === 'revenue' && (
         <div className="mb-4 grid gap-3 sm:grid-cols-3">
           {['USD', 'EUR', 'BYN'].map((currency) => (
-            <div key={currency} className="rounded-xl border border-line bg-surface p-4">
+            <div key={currency} className="workspace-surface rounded-xl border border-line bg-surface p-4">
               <p>{currency}</p>
               <p className="text-sm text-ink-2">
                 {w('Оплачено', 'Paid')}:{' '}
@@ -374,10 +441,24 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
         </div>
       )}
       {loading ? (
-        <p role="status">{w('Загрузка…', 'Loading…')}</p>
+        <PageFeedback state="loading">{w('Загрузка…', 'Loading…')}</PageFeedback>
+      ) : !filtered.length ? (
+        !error && (
+          <PageFeedback state="empty">
+            {w(
+              'Записей не найдено. Попробуйте изменить фильтры.',
+              'No records found. Try changing the filters.',
+            )}
+          </PageFeedback>
+        )
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-line bg-surface">
-          <table className="w-full text-left text-sm">
+        <div
+          className="workspace-surface overflow-x-auto rounded-xl border border-line bg-surface"
+          tabIndex={0}
+          role="region"
+          aria-label={w(cfg.ru, cfg.en)}
+        >
+          <table className="workspace-table w-full text-left text-sm">
             <thead className="bg-shell">
               <tr>
                 {cfg.fields
@@ -387,7 +468,7 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
                       {w(f.ru, f.en)}
                     </th>
                   ))}
-                {canWrite && <th className="p-3">{w('Действия', 'Actions')}</th>}
+                {(canWrite || clientProjects) && <th className="p-3">{w('Действия', 'Actions')}</th>}
               </tr>
             </thead>
             <tbody>
@@ -399,22 +480,30 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
                       <td className="max-w-xs break-words p-3" key={f.key}>
                         {f.key === 'status' || f.key === 'priority' ? (
                           <StatusBadge value={String(row[f.key])} />
+                        ) : f.key === 'projectId' && row.projectId && row.project && canReadProjects ? (
+                          <Link className="font-medium underline decoration-line underline-offset-2 hover:decoration-brand" to={`/projects/${row.projectId}`}>{label(row.project as Row)}</Link>
                         ) : f.source ? (
-                          label(refs[f.source]?.find((r) => r.id === row[f.key]) ?? { id: '—', name: '—' })
+                          label(
+                            refs[f.source]?.find((r) => r.id === row[f.key]) ??
+                              (row[relationByField[f.key]] as Row | undefined) ?? { id: '—' },
+                          )
                         ) : (
                           String(row[f.key] ?? '—').slice(0, f.type === 'date' ? 10 : undefined)
                         )}
                       </td>
                     ))}
-                  {canWrite && (
+                  {(canWrite || clientProjects) && (
                     <td className="p-3">
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => open(row)}>
+                        {clientProjects && <Button asChild variant="outline" size="sm"><Link to={`/projects?clientId=${row.id}`}>{w('Проекты', 'Projects')}</Link></Button>}
+                        {canWrite && <>
+                        <Button variant="outline" size="sm" disabled={busy} onClick={() => open(row)}>
                           {w('Изменить', 'Edit')}
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
+                          disabled={busy}
                           onClick={() => {
                             setDeleting(row.id)
                             setError('')
@@ -422,6 +511,7 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
                         >
                           {w('Удалить', 'Delete')}
                         </Button>
+                        </>}
                       </div>
                     </td>
                   )}
@@ -429,31 +519,31 @@ export function EntityPage({ kind }: { kind: keyof typeof configs }) {
               ))}
             </tbody>
           </table>
-          {!filtered.length && (
-            <p className="p-6 text-ink-2">
-              {w(
-                'Записей не найдено. Измените фильтр или создайте первую запись.',
-                'No records found. Change the filter or create your first record.',
-              )}
-            </p>
-          )}
         </div>
       )}
-      <div className="mt-4 flex items-center gap-3 text-sm">
-        <Button variant="outline" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>
-          ←
-        </Button>
-        <span>
-          {currentPage + 1} / {Math.max(1, Math.ceil(filtered.length / 10))} · {filtered.length}
-        </span>
-        <Button
-          variant="outline"
-          disabled={(currentPage + 1) * 10 >= filtered.length}
-          onClick={() => setPage(currentPage + 1)}
-        >
-          →
-        </Button>
-      </div>
+      {!loading && filtered.length > 0 && (
+        <div className="mt-4 flex items-center gap-3 text-sm">
+          <Button
+            variant="outline"
+            aria-label={w('Предыдущая страница', 'Previous page')}
+            disabled={currentPage === 0}
+            onClick={() => setPage(currentPage - 1)}
+          >
+            ←
+          </Button>
+          <span>
+            {currentPage + 1} / {Math.max(1, Math.ceil(filtered.length / 10))} · {filtered.length}
+          </span>
+          <Button
+            variant="outline"
+            aria-label={w('Следующая страница', 'Next page')}
+            disabled={(currentPage + 1) * 10 >= filtered.length}
+            onClick={() => setPage(currentPage + 1)}
+          >
+            →
+          </Button>
+        </div>
+      )}
     </PageContent>
   )
 }

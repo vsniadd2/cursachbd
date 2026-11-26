@@ -1,0 +1,178 @@
+.app-workspace {
+  --workspace-ease: cubic-bezier(0.2, 0.75, 0.25, 1);
+  --workspace-shadow: 0 2px 4px rgb(112 57 30 / 4%), 0 12px 32px -24px rgb(112 57 30 / 29%);
+}
+
+.workspace-surface {
+  box-shadow: var(--workspace-shadow);
+}
+
+.workspace-toolbar {
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background: var(--color-surface);
+  padding: 0.75rem;
+  box-shadow: var(--workspace-shadow);
+}
+
+.workspace-table th {
+  white-space: nowrap;
+  color: var(--color-ink-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.workspace-table tbody tr:focus-within {
+  background: var(--color-brand-soft);
+}
+
+.app-workspace :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.app-workspace :where(input, select, textarea):not([type='checkbox'], [type='radio']):focus-visible {
+  border-color: var(--color-brand);
+  outline-offset: 0;
+}
+
+.workspace-feedback {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  background: var(--color-surface);
+  padding: 0.875rem 1rem;
+  color: var(--color-ink-2);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.workspace-feedback > svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+}
+
+.workspace-feedback[data-state='error'] {
+  border-color: var(--color-danger-line);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.workspace-feedback[data-state='success'] {
+  border-color: var(--color-brand-4);
+  background: var(--color-pos-soft);
+  color: var(--color-pos);
+}
+
+.workspace-feedback[data-state='empty'] {
+  border-style: dashed;
+}
+
+.workspace-dialog {
+  overscroll-behavior: contain;
+}
+
+.workspace-dialog::backdrop {
+  background: rgb(65 34 18 / 60%);
+}
+
+@media (hover: hover) {
+  .workspace-interactive:hover {
+    border-color: color-mix(in srgb, var(--color-brand) 34%, var(--color-line));
+    box-shadow: 0 8px 24px -18px rgb(112 57 30 / 48%);
+  }
+
+  .workspace-table tbody tr:hover {
+    background: var(--color-shell);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .workspace-route {
+    animation: workspace-fade 160ms var(--workspace-ease) both;
+  }
+
+  :where(.workspace-enter, .workspace-dialog[open]) {
+    animation: workspace-enter 190ms var(--workspace-ease) both;
+  }
+
+  .workspace-dialog[open]::backdrop {
+    animation: workspace-fade 180ms ease-out both;
+  }
+
+  .workspace-drawer[open] {
+    animation: workspace-slide 220ms var(--workspace-ease) both;
+  }
+
+  .workspace-panel {
+    animation: workspace-slide-right 200ms var(--workspace-ease) both;
+  }
+
+  .workspace-interactive {
+    transition:
+      border-color 160ms ease,
+      background-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .workspace-table tbody tr {
+    transition: background-color 150ms ease;
+  }
+
+  .workspace-chart path {
+    transition: opacity 150ms ease;
+  }
+
+  .workspace-metric-icon {
+    animation: workspace-enter 240ms var(--workspace-ease) both;
+    animation-delay: calc(var(--metric-index, 0) * 35ms);
+  }
+
+  .workspace-feedback[data-state='loading'] > svg {
+    animation: workspace-spin 900ms linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-workspace *,
+  .app-workspace *::before,
+  .app-workspace *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
+  }
+}
+
+@keyframes workspace-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes workspace-enter {
+  from {
+    opacity: 0;
+    translate: 0 7px;
+  }
+}
+
+@keyframes workspace-slide {
+  from {
+    translate: -100% 0;
+  }
+}
+
+@keyframes workspace-slide-right {
+  from {
+    translate: 100% 0;
+  }
+}
+
+@keyframes workspace-spin {
+  to {
+    rotate: 1turn;
+  }
+}

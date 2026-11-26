@@ -17,7 +17,7 @@ export function AuthPageShell({
 }) {
   const w = useWords()
   return (
-    <div className="auth-atmosphere relative min-h-screen overflow-hidden font-sans text-slate-900">
+    <div className="auth-atmosphere relative min-h-screen overflow-hidden font-sans text-ink">
       <div aria-hidden="true" className="auth-atmosphere-light" />
       <div aria-hidden="true" className="auth-atmosphere-grain" />
       <header className="relative z-10 mx-auto flex max-w-[1440px] items-center justify-between px-6 py-6 md:px-12">
@@ -37,20 +37,20 @@ export function AuthPageShell({
             <br />
             {w('с вашей команды.', 'with your team.')}
           </h2>
-          <p className="mt-7 max-w-sm text-lg leading-relaxed text-slate-700">
+          <p className="mt-7 max-w-sm text-lg leading-relaxed text-ink-2">
             {w(
               'От первой идеи до большого результата. Клиенты, сделки и люди — в одном пространстве.',
               'From the first spark to your next big milestone. Customers, deals and people, in one space.',
             )}
           </p>
           <div className="mt-14 flex gap-4">
-            <span className="grid size-11 place-items-center rounded-full border border-slate-900/15">
+            <span className="grid size-11 place-items-center rounded-full border border-ink/15">
               <ArrowUpRight className="size-5" />
             </span>
             <p className="text-sm leading-relaxed">
               {w('Меньше рутины.', 'Less busywork.')}
               <br />
-              <span className="text-slate-500">
+              <span className="text-ink-2">
                 {w('Больше пространства для роста.', 'More room to grow.')}
               </span>
             </p>
@@ -58,13 +58,13 @@ export function AuthPageShell({
         </section>
         <div className="auth-card-enter mx-auto w-full max-w-[460px]">
           <article
-            className="auth-glass-card rounded-[28px] border border-white/80 bg-white/85 px-6 py-7 shadow-[0_28px_100px_-30px_rgba(33,39,103,.35)] backdrop-blur-2xl sm:px-9 sm:py-9"
+            className="auth-glass-card rounded-[28px] border border-white/80 bg-white/85 px-6 py-7 shadow-[0_28px_100px_-30px_rgba(112,57,30,.35)] backdrop-blur-2xl sm:px-9 sm:py-9"
             data-auth={subtitleKey}
           >
             {children}
           </article>
           {footer && <div className="mt-5 text-center">{footer}</div>}
-          <p className="mt-6 text-center text-[11px] text-slate-500">
+          <p className="mt-6 text-center text-[11px] text-ink-2">
             Flexora · {w('Ваш фокус. Ваша команда. Ваш рост.', 'Your focus. Your team. Your growth.')}
           </p>
         </div>

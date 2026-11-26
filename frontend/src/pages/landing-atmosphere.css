@@ -1,0 +1,172 @@
+.fx-landing {
+  --fx-page-background: #fff9f1;
+  --fx-preview-surface: #fffdf9;
+  --fx-light-orange: #f5b48a;
+  --fx-light-peach: #ffe1bd;
+  --fx-light-cream: #fff7ec;
+  --fx-light-amber: #f9c58c;
+}
+
+.fx-atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  border-radius: inherit;
+  background: linear-gradient(
+    138deg,
+    var(--fx-light-orange),
+    var(--fx-light-peach) 30%,
+    var(--fx-light-cream) 56%,
+    var(--fx-light-amber) 100%
+  );
+  pointer-events: none;
+}
+
+.fx-atmosphere::before,
+.fx-atmosphere::after {
+  position: absolute;
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  content: '';
+}
+
+/* Wide gradients move independently to make the highlights bend and overlap. */
+.fx-atmosphere::before {
+  inset: -37% -28%;
+  background:
+    radial-gradient(ellipse 44% 41% at 51% 44%, var(--fx-light-cream) 9%, transparent 95%),
+    radial-gradient(ellipse 40% 34% at 25% 53%, var(--fx-light-peach) 9%, transparent 92%),
+    radial-gradient(ellipse 44% 38% at 79% 37%, var(--fx-light-amber) 9%, transparent 86%),
+    radial-gradient(ellipse 48% 42% at 42% 78%, var(--fx-light-orange) 8%, transparent 89%);
+  transform: translate(-5%, -2%) rotate(-10deg) scale(1.05);
+}
+
+.fx-atmosphere::after {
+  inset: -33% -29%;
+  background:
+    radial-gradient(
+      ellipse 57% 40% at 32% 67%,
+      transparent 37%,
+      var(--fx-light-cream) 53%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 54% 36% at 72% 27%,
+      transparent 22%,
+      var(--fx-light-peach) 44%,
+      transparent 71%
+    ),
+    radial-gradient(ellipse 45% 39% at 80% 69%, var(--fx-light-amber) 4%, transparent 85%),
+    radial-gradient(ellipse 44% 37% at 16% 27%, var(--fx-light-orange) 3%, transparent 91%);
+  opacity: 0.74;
+  transform: translate(8%, 2%) rotate(-18deg) scale(1.04);
+}
+
+.fx-hero-wrap :is(.fx-atmosphere, .fx-texture) {
+  mask-image: linear-gradient(#000 0%, #000 69%, transparent 100%);
+}
+
+.fx-final :is(.fx-atmosphere, .fx-texture) {
+  mask-image: linear-gradient(transparent 0%, #000 28%, #000 72%, transparent 100%);
+}
+
+@media (max-aspect-ratio: 3/4) {
+  .fx-hero-wrap .fx-atmosphere::before,
+  .fx-hero-wrap .fx-atmosphere::after {
+    inset-inline: -48%;
+  }
+}
+
+.fx-start-grid > article {
+  position: relative;
+  isolation: isolate;
+  --fx-light-orange: #ffe4d2;
+  --fx-light-peach: #fff0dc;
+  --fx-light-amber: #ffe1ad;
+  --fx-light-cream: #fffaf4;
+}
+
+.fx-start-grid > article:nth-child(2) {
+  --fx-light-phase: -8s;
+}
+
+.fx-product-stage,
+.fx-feature-art {
+  position: relative;
+  isolation: isolate;
+  --fx-light-orange: #ffbd9a;
+  --fx-light-peach: #ffe2c5;
+  --fx-light-amber: #ffcc91;
+  --fx-light-cream: #fff8ee;
+  --fx-light-phase: -5s;
+}
+
+.fx-art-tasks {
+  --fx-light-orange: #ffc6a4;
+  --fx-light-peach: #ffebd0;
+  --fx-light-amber: #fbd39a;
+  --fx-light-phase: -11s;
+}
+
+.fx-art-team {
+  --fx-light-orange: #ffbda5;
+  --fx-light-peach: #ffe5cd;
+  --fx-light-amber: #ffc890;
+  --fx-light-phase: -17s;
+}
+
+.fx-final {
+  --fx-light-orange: #f6c5a4;
+  --fx-light-peach: #ffe8d0;
+  --fx-light-amber: #fcd3aa;
+  --fx-light-cream: #fff5e8;
+  --fx-light-phase: -9s;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fx-atmosphere::before {
+    animation: fx-light-flow 22s ease-in-out var(--fx-light-phase, -3s) infinite paused;
+  }
+
+  .fx-atmosphere::after {
+    animation: fx-light-reflection 17s ease-in-out var(--fx-light-phase, -1s) infinite paused;
+  }
+
+  .fx-atmosphere[data-fx-flow]::before,
+  .fx-atmosphere[data-fx-flow]::after {
+    animation-play-state: running;
+  }
+}
+
+@keyframes fx-light-flow {
+  0%,
+  100% {
+    transform: translate(-5%, -2%) rotate(-10deg) scale(1.05);
+  }
+
+  33% {
+    transform: translate(8%, -5%) rotate(8deg) scale(1.14);
+  }
+
+  68% {
+    transform: translate(-2%, 8%) rotate(-4deg) scale(1.09);
+  }
+}
+
+@keyframes fx-light-reflection {
+  0%,
+  100% {
+    opacity: 0.74;
+    transform: translate(8%, 2%) rotate(-18deg) scale(1.04);
+  }
+
+  46% {
+    opacity: 0.57;
+    transform: translate(-8%, -9%) rotate(14deg) scale(1.14);
+  }
+
+  74% {
+    opacity: 0.85;
+    transform: translate(1%, 6%) rotate(-7deg) scale(1.08);
+  }
+}

@@ -1,11 +1,13 @@
 export const landingKeitaroEn = {
   tabsAria: 'Product pillars',
+  menu: 'Menu',
+  carouselPrev: 'Previous cards',
+  carouselNext: 'Next cards',
   nav: { product: 'Product', features: 'Features', pricing: 'Pricing' },
   hero: {
     badge: 'CRM · projects · tracker · Jira',
     title: 'Client and project tracker with full delivery clarity',
-    body:
-      'A web app to manage clients and projects for IT companies — CRM, tasks, and integrations in one workspace.',
+    body: 'A web app to manage clients and projects for IT companies — CRM, tasks, and integrations in one workspace.',
     ctaPrimary: 'Start tracking',
     ctaDemo: 'Live demo',
     orbit: {
@@ -39,7 +41,7 @@ export const landingKeitaroEn = {
   explore: 'Explore all features',
   pillars: {
     track: {
-      title: 'Track',
+      title: 'Track Clients and Projects in One Place',
       intro:
         'Capture every lead, client, and task in context. UTM-style attribution for sources, project links, and Jira issues — so nothing falls through the cracks.',
       f1t: 'Leads & clients',
@@ -52,7 +54,7 @@ export const landingKeitaroEn = {
       f4d: 'Timestamped updates across CRM and tracker.',
     },
     analyze: {
-      title: 'Analyze',
+      title: 'Understand What Drives Your Projects',
       intro:
         'Turn operational data into decisions — pipeline health, delivery velocity, and revenue signals without exporting spreadsheets.',
       f1t: 'Pipeline analytics',
@@ -65,7 +67,7 @@ export const landingKeitaroEn = {
       f4d: 'Open tasks and capacity by role.',
     },
     optimize: {
-      title: 'Optimize',
+      title: 'Less Routine. Better Delivery.',
       intro:
         'Tighten handoffs between sales and delivery. Automate status changes, templates, and prioritization rules that match how your IT team ships.',
       f1t: 'Pipeline rules',
@@ -78,7 +80,7 @@ export const landingKeitaroEn = {
       f4d: 'Webhooks and Jira field mapping.',
     },
     scale: {
-      title: 'Scale',
+      title: 'Grow with Confidence and Clarity',
       intro:
         'Grow teams, clients, and integrations without fragmenting access. Enterprise-ready roles, subgroups, and audit for regulated delivery.',
       f1t: 'Roles & JWT',
@@ -181,6 +183,8 @@ export const landingKeitaroEn = {
     a3d: 'Issues stay in delivery, statuses live in Flexora.',
   },
   footer: {
+    social: 'Social',
+    legal: 'Legal',
     product: 'Product',
     resources: 'Resources',
     resourcesNav: 'Resources',

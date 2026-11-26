@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next'
 const SLICE_KEYS = ['website', 'email', 'automation'] as const
 
 const SLICE_META = [
-  { value: 23, fill: 'var(--color-brand-3)', text: 'var(--color-ink)', dot: 'var(--color-brand)' },
-  { value: 32, fill: 'var(--color-brand-2)', text: '#ffffff', dot: 'var(--color-brand-2)' },
-  { value: 45, fill: 'var(--color-brand)', text: '#ffffff', dot: 'var(--color-brand-3)' },
+  { value: 23, fill: 'var(--color-brand-3)' },
+  { value: 32, fill: 'var(--color-brand-2)' },
+  { value: 45, fill: 'var(--color-brand)' },
 ] as const
 
 const DEFAULT_ARCS = SLICE_META.reduce<{ from: number; to: number }[]>((acc, s) => {
@@ -39,7 +39,7 @@ export function Touchpoints({
     : DEFAULT_ARCS
 
   return (
-    <section className="flex items-stretch justify-between gap-3 rounded-[14px] border border-line bg-surface px-[15px] py-[15px] sm:h-[176px]">
+    <section className="workspace-surface flex min-w-0 items-stretch justify-between gap-3 rounded-[14px] border border-line bg-surface px-[15px] py-[15px] sm:h-[176px]">
       <div className="flex min-w-0 flex-col justify-between">
         <h2 className="text-[15px] tracking-[-0.005em]">{title ?? t('touchpoints.title')}</h2>
         <ul className="mt-4 space-y-[9px] pb-[18px]">
@@ -50,7 +50,7 @@ export function Touchpoints({
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
             >
-              <span className="size-[7px] rounded-full" style={{ background: s.dot }} />
+              <span className="size-[7px] shrink-0 rounded-full" style={{ background: s.fill }} />
               <span className={hover === i ? 'text-ink' : 'text-ink-2'}>{s.label}</span>
               <span className="ml-auto tabular text-ink">{s.value}%</span>
             </li>
@@ -61,9 +61,9 @@ export function Touchpoints({
         role="img"
         aria-label={title ?? t('touchpoints.title')}
         viewBox="-100 -100 200 200"
-        className="size-[120px] shrink-0 self-center"
+        className="workspace-chart size-[84px] shrink-0 self-center min-[400px]:size-[120px]"
       >
-        {!total && <circle r="100" fill="#f2f2f3" />}
+        {!total && <circle r="100" fill="var(--color-cell)" />}
         {slices.map((s, i) => {
           const { from, to } = arcs[i]
           const large = to - from > 180 ? 1 : 0

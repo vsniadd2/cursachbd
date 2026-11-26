@@ -39,7 +39,7 @@ export function LocaleLangToggle({ className, size = 'default' }: LocaleLangTogg
   const triggerClass =
     size === 'compact'
       ? 'grid size-[37px] shrink-0 place-items-center rounded-[9px] border border-line bg-surface text-ink transition-colors duration-150 hover:bg-shell'
-      : 'grid size-[40px] place-items-center rounded-full border border-line bg-surface/80 text-ink shadow-[0_2px_12px_rgba(23,23,26,0.04)] transition-colors hover:bg-shell'
+      : 'grid size-[40px] place-items-center rounded-full border border-line bg-surface/80 text-ink shadow-[0_2px_12px_rgba(112,57,30,0.04)] transition-colors hover:bg-shell'
 
   return (
     <div ref={rootRef} className={cn('relative', className)}>
@@ -60,7 +60,7 @@ export function LocaleLangToggle({ className, size = 'default' }: LocaleLangTogg
           id={listId}
           role="listbox"
           aria-label={t('langToggleAria')}
-          className="absolute top-[calc(100%+6px)] right-0 z-50 min-w-[120px] overflow-hidden rounded-[10px] border border-line bg-surface py-1 shadow-[0_12px_40px_rgba(23,23,26,0.12)]"
+          className="dropdown-surface absolute top-[calc(100%+6px)] right-0 z-50 min-w-[120px]"
         >
           {LANGS.map((code) => {
             const selected = lang === code
@@ -71,8 +71,8 @@ export function LocaleLangToggle({ className, size = 'default' }: LocaleLangTogg
                   role="option"
                   aria-selected={selected}
                   className={cn(
-                    'flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] font-medium uppercase tracking-wide transition-colors',
-                    selected ? 'bg-shell text-ink' : 'text-ink-2 hover:bg-shell/80 hover:text-ink',
+                    'flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 text-left text-[12px] font-medium uppercase tracking-wide transition-colors hover:bg-brand-4 focus-visible:outline focus-visible:outline-brand',
+                    selected ? 'bg-brand-soft font-semibold text-brand-strong' : 'text-ink',
                   )}
                   onClick={() => {
                     void i18n.changeLanguage(code)

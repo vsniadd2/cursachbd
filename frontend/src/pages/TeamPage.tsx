@@ -1,10 +1,11 @@
-import { errorText } from '@/lib/product'
+import { errorText, useWords } from '@/lib/product'
 import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Filter, UserPlus } from 'lucide-react'
 import { PageContent } from '@/components/app/PageContent'
 import { PageHeader } from '@/components/app/PageHeader'
+import { PageFeedback } from '@/components/app/PageFeedback'
 import { Button } from '@/components/ui/button'
 import { TeamPeopleOrgChart } from '@/components/team/TeamPeopleOrgChart'
 import { TeamDepartmentOrgChart } from '@/components/team/TeamDepartmentOrgChart'
@@ -27,7 +28,9 @@ function isTeamTab(v: string | null): v is TeamTab {
 
 export function TeamPage() {
   const { t } = useTranslation('pages')
+  const w = useWords()
   const { user } = useAuth()
+  const canRead = userCan(user, 'users:read')
   const canWrite = userCan(user, 'users:write', '*')
   const [params, setParams] = useSearchParams()
   const raw = params.get('tab')
@@ -52,33 +55,41 @@ export function TeamPage() {
     setRoles(r)
   }, [])
 
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        await reload('')
-      } catch (e) {
-        setError(errorText(e))
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
-    return () => {
-      cancelled = true
+  const loadTeam = useCallback(async () => {
+    if (!canRead) return
+    setError('')
+    setLoading(true)
+    try {
+      await reload('')
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setLoading(false)
     }
-  }, [reload])
+  }, [canRead, reload])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Load current team data on entry.
+    void loadTeam()
+  }, [loadTeam])
 
   function setTab(next: TeamTab) {
     setParams({ tab: next }, { replace: true })
   }
 
+  if (!canRead) {
+    return (
+      <PageContent>
+        <PageHeader title={t('team.title')} />
+        <PageFeedback state="empty">
+          {w('У вашей роли нет доступа к списку команды.', 'Your role cannot access the team roster.')}
+        </PageFeedback>
+      </PageContent>
+    )
+  }
+
   return (
     <PageContent>
-      {error && (
-        <p role="alert" className="text-red-700">
-          {error}
-        </p>
-      )}
       <PageHeader
         title={t('team.title')}
         description={t('team.description')}
@@ -89,6 +100,7 @@ export function TeamPage() {
               variant="brand"
               className="h-[38px] w-full gap-2 rounded-full px-5 text-[13px] sm:w-auto"
               onClick={() => setInviteOpen(true)}
+              disabled={loading || Boolean(error)}
             >
               <UserPlus className="size-4" strokeWidth={1.6} />
               {t('team.addCta')}
@@ -97,15 +109,27 @@ export function TeamPage() {
         }
       />
 
-      <nav className="mb-3 flex gap-6 border-b border-line" aria-label={t('team.tabsAria')}>
+      {error && (
+        <PageFeedback state="error" className="mb-4">
+          <p>{error}</p>
+          <Button variant="outline" size="sm" className="mt-2" onClick={() => void loadTeam()}>
+            {w('Повторить', 'Retry')}
+          </Button>
+        </PageFeedback>
+      )}
+
+      <nav className="workspace-toolbar mb-4 flex flex-wrap gap-2" aria-label={t('team.tabsAria')}>
         {TABS.map((key) => (
           <button
             key={key}
             type="button"
+            aria-pressed={tab === key}
             onClick={() => setTab(key)}
             className={cn(
-              '-mb-px border-b-2 px-1 pb-2.5 text-[14px] font-medium transition-colors',
-              tab === key ? 'border-brand text-ink' : 'border-transparent text-ink-2 hover:text-ink',
+              'rounded-full border px-4 py-1.5 text-[13px] font-medium transition-colors',
+              tab === key
+                ? 'border-brand bg-brand text-white'
+                : 'border-line bg-surface text-ink-2 hover:text-ink',
             )}
           >
             {t(`team.tabs.${key}`)}
@@ -113,7 +137,7 @@ export function TeamPage() {
         ))}
       </nav>
 
-      {tab === 'people' && (
+      {!error && tab === 'people' && (
         <div className="mb-4 flex items-center justify-between gap-3">
           <Button
             type="button"
@@ -127,8 +151,8 @@ export function TeamPage() {
         </div>
       )}
 
-      {tab === 'people' && (
-        <>
+      {!error && tab === 'people' && (
+        <div className="workspace-enter">
           <TeamPeopleOrgChart
             users={users}
             loading={loading}
@@ -144,10 +168,12 @@ export function TeamPage() {
               onReload={reload}
             />
           )}
-        </>
+        </div>
       )}
-      {tab === 'departments' && (
-        <TeamDepartmentOrgChart departments={departments} users={users} loading={loading} />
+      {!error && tab === 'departments' && (
+        <div className="workspace-enter">
+          <TeamDepartmentOrgChart departments={departments} users={users} loading={loading} />
+        </div>
       )}
 
       <TeamInviteLinkDialog

@@ -57,13 +57,23 @@ test('scroll reveals and chart drawing run on entry and respect reduced motion',
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/', { waitUntil: 'domcontentloaded' })
   const root = page.locator('.fx-landing'),
+    heroLight = page.locator('.fx-hero-wrap .fx-atmosphere'),
+    productLight = page.locator('.fx-product-stage .fx-atmosphere'),
     chart = page.locator('.fx-preview-overview'),
     line = chart.locator('.fx-chart-line')
   await expect(root).toHaveClass(/fx-motion-ready/)
+  await expect(heroLight).toHaveAttribute('data-fx-flow', '')
+  await expect(productLight).not.toHaveAttribute('data-fx-flow', '')
+  const firstPosition = await heroLight.evaluate((element) => getComputedStyle(element, '::before').transform)
+  await expect
+    .poll(() => heroLight.evaluate((element) => getComputedStyle(element, '::before').transform))
+    .not.toBe(firstPosition)
   await expect(chart).not.toHaveAttribute('data-fx-play', 'true')
   expect(await line.evaluate((e) => Number.parseFloat(getComputedStyle(e).strokeDashoffset))).toBe(1)
   await chart.scrollIntoViewIfNeeded()
   await expect(chart).toHaveAttribute('data-fx-play', 'true')
+  await expect(heroLight).not.toHaveAttribute('data-fx-flow', '')
+  await expect(productLight).toHaveAttribute('data-fx-flow', '')
   await expect
     .poll(() => line.evaluate((e) => Number.parseFloat(getComputedStyle(e).strokeDashoffset)))
     .toBe(0)
@@ -80,6 +90,10 @@ test('scroll reveals and chart drawing run on entry and respect reduced motion',
   }
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await expect(root).not.toHaveClass(/fx-motion-ready/)
+  await expect(productLight).not.toHaveAttribute('data-fx-flow', '')
+  expect(await productLight.evaluate((element) => getComputedStyle(element, '::before').animationName)).toBe(
+    'none',
+  )
   expect(await line.evaluate((e) => e.getAnimations().length)).toBe(0)
   await page.setViewportSize({ width: 390, height: 844 })
   await page.locator('#product').scrollIntoViewIfNeeded()

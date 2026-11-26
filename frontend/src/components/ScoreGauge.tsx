@@ -6,7 +6,7 @@ export function ScoreGauge({ score }: { score: number }) {
   const split = START + (SWEEP * s) / 100
 
   return (
-    <section className="flex flex-col rounded-[14px] border border-line bg-surface px-[18px] pt-[18px] pb-[20px]">
+    <section className="workspace-surface flex flex-col rounded-[14px] border border-line bg-surface px-[18px] pt-[18px] pb-[20px]">
       <h2 className="text-[15px] tracking-[-0.005em]">{t('scoreGauge.title')}</h2>
 
       <svg
@@ -52,7 +52,7 @@ export function ScoreGauge({ score }: { score: number }) {
           fontSize="82"
           fontWeight="500"
           letterSpacing="-3"
-          fill="#4a4a55"
+          fill="var(--color-ink)"
           fontFamily="Inter, sans-serif"
         >
           {s}
@@ -62,7 +62,7 @@ export function ScoreGauge({ score }: { score: number }) {
           y={CY + 50}
           textAnchor="middle"
           fontSize="12.5"
-          fill="#4b4b52"
+          fill="var(--color-ink-2)"
           fontFamily="Inter, sans-serif"
         >
           {t('scoreGauge.scale')}

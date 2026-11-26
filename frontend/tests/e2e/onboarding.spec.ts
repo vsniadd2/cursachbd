@@ -1,4 +1,24 @@
 import { test, expect } from '@playwright/test'
+
+test('demo sign-in reports service errors and opens the workspace after recovery', async ({ page }) => {
+  const endpoint = '**/api/v1/auth/login'
+  await page.goto('/login')
+  const demo = page.getByRole('button', { name: 'Войти с демо-аккаунтом' })
+  await page.route(endpoint, (route) => route.fulfill({ status: 503, json: { success: false } }))
+  await demo.click()
+  await expect(page.getByRole('alert')).toHaveText('Сервис входа временно недоступен. Попробуйте ещё раз.')
+  await page.unroute(endpoint)
+
+  await page.route(endpoint, (route) => route.fulfill({ status: 401, json: { success: false } }))
+  await demo.click()
+  await expect(page.getByRole('alert')).toHaveText('Демо-аккаунт недоступен на этом сервере.')
+  await page.unroute(endpoint)
+
+  await demo.click()
+  await expect(page).toHaveURL(/\/dashboard$/)
+  await expect(page.getByRole('heading', { name: 'Обзор бизнеса' })).toBeVisible()
+})
+
 test('business registration, personal registration, join by code and auth layouts', async ({
   page,
   request,

@@ -10,10 +10,12 @@ export function useLandingMotion() {
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
     let revealObserver: IntersectionObserver | undefined
     let chartObserver: IntersectionObserver | undefined
+    let atmosphereObserver: IntersectionObserver | undefined
     const sections = root.querySelectorAll<HTMLElement>(
       '.fx-section-heading, .fx-start-grid > article, .fx-product-stage, .fx-feature-art, .fx-feature-copy, .fx-faq > h2, .fx-faq details, .fx-final-content, .fx-footer > div, .fx-footer > nav',
     )
     const charts = root.querySelectorAll<HTMLElement>('.fx-preview')
+    const atmospheres = root.querySelectorAll<HTMLElement>('.fx-atmosphere')
     function revealFocused(event: FocusEvent) {
       if (!(event.target instanceof Element)) return
       for (const section of sections)
@@ -25,7 +27,9 @@ export function useLandingMotion() {
     function setup() {
       revealObserver?.disconnect()
       chartObserver?.disconnect()
+      atmosphereObserver?.disconnect()
       root.classList.remove('fx-motion-ready')
+      atmospheres.forEach((atmosphere) => atmosphere.removeAttribute('data-fx-flow'))
       if (preference.matches) return
       sections.forEach((section, index) => {
         section.dataset.fxReveal = 'true'
@@ -58,6 +62,9 @@ export function useLandingMotion() {
         },
         { threshold: 0.3, rootMargin: '0px 0px -20px 0px' },
       )
+      atmosphereObserver = new IntersectionObserver((entries) => {
+        for (const entry of entries) entry.target.toggleAttribute('data-fx-flow', entry.isIntersecting)
+      })
       root.classList.add('fx-motion-ready')
       sections.forEach((section) => {
         if (!section.dataset.fxVisible) revealObserver?.observe(section)
@@ -65,6 +72,7 @@ export function useLandingMotion() {
       charts.forEach((chart) => {
         if (!chart.dataset.fxPlay) chartObserver?.observe(chart)
       })
+      atmospheres.forEach((atmosphere) => atmosphereObserver?.observe(atmosphere))
     }
     setup()
     preference.addEventListener('change', setup)
@@ -72,6 +80,7 @@ export function useLandingMotion() {
     return () => {
       revealObserver?.disconnect()
       chartObserver?.disconnect()
+      atmosphereObserver?.disconnect()
       preference.removeEventListener('change', setup)
       root.removeEventListener('focusin', revealFocused)
       root.classList.remove('fx-motion-ready')

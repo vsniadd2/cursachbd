@@ -55,6 +55,7 @@ enum ProjectMemberRole {
 enum NotificationType {
   INFO
   TASK
+  TASK_ASSIGNED
   PROJECT
   INVOICE
   SYSTEM
@@ -85,7 +86,8 @@ enum InviteStatus {
 }
 
 model Role {
-  teamId String? @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  teamId String? @default(dbgenerated("'11111111-1111-4111-8111-111111111111'::uuid")) @db.Uuid
+  team Team? @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   @@index([teamId])
   id          String   @id @default(uuid()) @db.Uuid
   name        String
@@ -100,7 +102,8 @@ model Role {
 }
 
 model CustomPermission {
-  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  teamId String @default(dbgenerated("'11111111-1111-4111-8111-111111111111'::uuid")) @db.Uuid
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   @@index([teamId])
   id          String   @id @default(uuid()) @db.Uuid
   slug        String
@@ -112,7 +115,8 @@ model CustomPermission {
 }
 
 model Department {
-  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  teamId String @default(dbgenerated("'11111111-1111-4111-8111-111111111111'::uuid")) @db.Uuid
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   @@index([teamId])
   id        String   @id @default(uuid()) @db.Uuid
   name      String
@@ -128,7 +132,8 @@ model Department {
 }
 
 model User {
-  teamId String? @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  teamId String? @default(dbgenerated("'11111111-1111-4111-8111-111111111111'::uuid")) @db.Uuid
+  team Team? @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   @@index([teamId])
   id               String   @id @default(uuid()) @db.Uuid
   email            String   @unique
@@ -166,7 +171,8 @@ model User {
 
 model TeamInvite {
   codeHash String? @unique
-  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  teamId String @default(dbgenerated("'11111111-1111-4111-8111-111111111111'::uuid")) @db.Uuid
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   @@index([teamId])
   id                 String       @id @default(uuid()) @db.Uuid
   type               InviteType
@@ -207,7 +213,8 @@ model RefreshToken {
 }
 
 model Client {
-  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  teamId String @default(dbgenerated("'11111111-1111-4111-8111-111111111111'::uuid")) @db.Uuid
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   @@index([teamId])
   id           String       @id @default(uuid()) @db.Uuid
   companyName  String
@@ -227,7 +234,8 @@ model Client {
 }
 
 model Project {
-  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  teamId String @default(dbgenerated("'11111111-1111-4111-8111-111111111111'::uuid")) @db.Uuid
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   @@index([teamId])
   id          String         @id @default(uuid()) @db.Uuid
   clientId    String         @db.Uuid
@@ -247,6 +255,7 @@ model Project {
   invoices Invoice[]
 
   @@index([clientId, status])
+  @@index([teamId, status, endDate])
 }
 
 model ProjectMember {
@@ -266,7 +275,8 @@ model ProjectMember {
 }
 
 model Task {
-  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  teamId String @default(dbgenerated("'11111111-1111-4111-8111-111111111111'::uuid")) @db.Uuid
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   @@index([teamId])
   id          String       @id @default(uuid()) @db.Uuid
   projectId   String       @db.Uuid
@@ -320,7 +330,8 @@ model TaskAttachment {
 }
 
 model Invoice {
-  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  teamId String @default(dbgenerated("'11111111-1111-4111-8111-111111111111'::uuid")) @db.Uuid
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   @@index([teamId])
   id            String        @id @default(uuid()) @db.Uuid
   invoiceNumber String
@@ -359,6 +370,7 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, readAt])
+  @@index([userId, createdAt, id])
 }
 
 model ActivityLog {
@@ -379,7 +391,8 @@ model ActivityLog {
 
 // Shared team workspace; external mail delivery is deliberately not simulated.
 model WorkspaceItem {
-  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  teamId String @default(dbgenerated("'11111111-1111-4111-8111-111111111111'::uuid")) @db.Uuid
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   @@index([teamId])
   id        String   @id @default(uuid()) @db.Uuid
   kind      String
@@ -398,4 +411,15 @@ model Team {
  id String @id @default(uuid()) @db.Uuid
  name String
  createdAt DateTime @default(now())
+
+  roles Role[]
+  customPermissions CustomPermission[]
+  departments Department[]
+  users User[]
+  invites TeamInvite[]
+  clients Client[]
+  projects Project[]
+  tasks Task[]
+  invoices Invoice[]
+  workspaceItems WorkspaceItem[]
 }

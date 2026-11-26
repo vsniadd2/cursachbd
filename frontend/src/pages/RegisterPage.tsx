@@ -76,7 +76,7 @@ export function RegisterPage() {
     <AuthPageShell subtitleKey="registerSubtitle" showLangToggle>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <div>
-          <p className="mb-2 text-xs font-medium uppercase tracking-[.18em] text-indigo-500">
+          <p className="mb-2 text-xs font-medium uppercase tracking-[.18em] text-brand-strong">
             {w('Начните с главного', 'A new beginning')}
           </p>
           <h1 className="text-3xl font-medium tracking-tight">
@@ -103,21 +103,21 @@ export function RegisterPage() {
                 return (
                   <label
                     key={type}
-                    className={`cursor-pointer rounded-2xl border p-3 transition-all duration-200 ${accountType === type ? 'border-indigo-400 bg-indigo-50 shadow-sm' : 'border-slate-200 hover:border-indigo-200'}`}
+                    className={`cursor-pointer rounded-2xl border p-3 transition-all duration-200 ${accountType === type ? 'border-brand bg-brand-soft shadow-sm' : 'border-line hover:border-brand-2'}`}
                   >
                     <input
-                      className="float-right size-4 accent-indigo-600"
+                      className="float-right size-4 accent-brand"
                       type="radio"
                       name="accountType"
                       value={type}
                       checked={accountType === type}
                       onChange={() => setAccountType(type)}
                     />
-                    <Icon className="mb-2 size-5 text-indigo-600" />
+                    <Icon className="mb-2 size-5 text-brand-strong" />
                     <span className="block text-sm font-medium">
                       {type === 'BUSINESS' ? w('Бизнес', 'Business') : w('Личный аккаунт', 'Personal')}
                     </span>
-                    <span className="mt-1 block text-xs leading-relaxed text-slate-500">
+                    <span className="mt-1 block text-xs leading-relaxed text-ink-2">
                       {type === 'BUSINESS'
                         ? w('Создать свою команду', 'Create your team')
                         : w('Войти по приглашению', 'Join with a code')}
@@ -199,7 +199,7 @@ export function RegisterPage() {
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="-mt-2 flex items-center gap-2 self-end text-xs text-slate-500"
+          className="-mt-2 flex items-center gap-2 self-end text-xs text-ink-2"
         >
           {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
           {showPassword ? w('Скрыть пароль', 'Hide password') : w('Показать пароль', 'Show password')}

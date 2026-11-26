@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { WorkspaceDialog } from '@/components/app/WorkspaceDialog'
 import { createInvite } from '@/services/invites.service'
 import type { Department, RoleRow } from '@/types/crm'
 
@@ -58,12 +59,13 @@ export function TeamInviteLinkDialog({ open, onClose, roles, departments }: Prop
   }
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-ink/30 p-4 sm:items-center"
-      role="dialog"
-      aria-modal
+    <WorkspaceDialog
+      label={t('team.invite.linkTitle')}
+      onClose={onClose}
+      dismissible={!busy}
+      className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl"
     >
-      <div className="w-full max-w-md rounded-[14px] border border-line bg-surface p-5 shadow-[0_24px_80px_rgba(23,23,26,0.12)]">
+      <div className="w-full max-w-md rounded-[14px] border border-line bg-surface p-5 shadow-[0_24px_80px_rgba(112,57,30,0.12)]">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-[15px] font-medium">{t('team.invite.linkTitle')}</h3>
@@ -72,6 +74,7 @@ export function TeamInviteLinkDialog({ open, onClose, roles, departments }: Prop
           <button
             type="button"
             className="rounded-[8px] border border-line p-1.5"
+            disabled={busy}
             onClick={onClose}
             aria-label={t('team.invite.close')}
           >
@@ -80,8 +83,8 @@ export function TeamInviteLinkDialog({ open, onClose, roles, departments }: Prop
         </div>
 
         <div className="mt-4 space-y-3">
-          <div>
-            <label className="text-[11px] text-ink-2">{t('team.invite.roleGroup')}</label>
+          <label className="block text-[11px] text-ink-2">
+            {t('team.invite.roleGroup')}
             <select
               className="mt-1 h-[40px] w-full rounded-[10px] border border-line bg-surface px-3 text-[13px]"
               value={roleId}
@@ -94,9 +97,9 @@ export function TeamInviteLinkDialog({ open, onClose, roles, departments }: Prop
                 </option>
               ))}
             </select>
-          </div>
-          <div>
-            <label className="text-[11px] text-ink-2">{t('team.subgroup')}</label>
+          </label>
+          <label className="block text-[11px] text-ink-2">
+            {t('team.subgroup')}
             <select
               className="mt-1 h-[40px] w-full rounded-[10px] border border-line bg-surface px-3 text-[13px]"
               value={departmentId}
@@ -109,7 +112,7 @@ export function TeamInviteLinkDialog({ open, onClose, roles, departments }: Prop
                 </option>
               ))}
             </select>
-          </div>
+          </label>
         </div>
 
         {link && (
@@ -134,13 +137,18 @@ export function TeamInviteLinkDialog({ open, onClose, roles, departments }: Prop
           </div>
         )}
 
-        {error && <p className="mt-3 text-[12px] text-brand">{error}</p>}
+        {error && (
+          <p role="alert" className="mt-3 text-[12px] text-danger">
+            {error}
+          </p>
+        )}
 
         <div className="mt-5 flex flex-wrap gap-2">
           <Button
             type="button"
             variant="outline"
             className="h-[38px] flex-1 rounded-[10px]"
+            disabled={busy}
             onClick={onClose}
           >
             {t('team.invite.close')}
@@ -162,6 +170,6 @@ export function TeamInviteLinkDialog({ open, onClose, roles, departments }: Prop
           </Link>
         </p>
       </div>
-    </div>
+    </WorkspaceDialog>
   )
 }

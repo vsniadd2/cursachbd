@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { WorkspaceDialog } from '@/components/app/WorkspaceDialog'
 import { createInvite, type CreateInviteBody } from '@/services/invites.service'
 import { PUBLIC_CODE_PATTERN } from '@/lib/auth/permissions'
 import type { Department, RoleRow } from '@/types/crm'
@@ -44,7 +45,7 @@ export function TeamInviteSheet({ open, onClose, roles, departments, onCreated }
   async function submit() {
     setBusy(true)
     setError(null)
-  setResultLink(null)
+    setResultLink(null)
     setResultCreds(null)
     try {
       const bodyBase = {
@@ -91,19 +92,29 @@ export function TeamInviteSheet({ open, onClose, roles, departments, onCreated }
     }
   }
 
-  function copyLink() {
-    if (resultLink) void navigator.clipboard.writeText(resultLink)
+  async function copyLink() {
+    if (!resultLink) return
+    try {
+      await navigator.clipboard.writeText(resultLink)
+    } catch {
+      setError(t('team.invite.error'))
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/30 p-4 sm:items-center" role="dialog" aria-modal>
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[14px] border border-line bg-surface p-5 shadow-[0_24px_80px_rgba(23,23,26,0.12)]">
+    <WorkspaceDialog
+      label={t('team.invite.title')}
+      onClose={onClose}
+      dismissible={!busy}
+      className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl"
+    >
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[14px] border border-line bg-surface p-5 shadow-[0_24px_80px_rgba(112,57,30,0.12)]">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h3 className="text-[15px] font-medium">{t('team.invite.title')}</h3>
             <p className="mt-0.5 text-[12px] text-ink-2">{t('team.invite.subtitle')}</p>
           </div>
-          <button type="button" className="rounded-[8px] border border-line p-1.5" onClick={onClose} aria-label={t('team.invite.close')}>
+          <button type="button" className="rounded-[8px] border border-line p-1.5" onClick={onClose} aria-label={t('team.invite.close')} disabled={busy}>
             <X className="size-4" />
           </button>
         </div>
@@ -189,7 +200,7 @@ export function TeamInviteSheet({ open, onClose, roles, departments, onCreated }
               </select>
             </div>
           </div>
-          {error && <p className="text-[12px] text-red-600">{error}</p>}
+          {error && <p className="text-[12px] text-danger">{error}</p>}
           {resultLink && (
             <div className="rounded-[10px] border border-line bg-shell p-3 text-[12px]">
               <p className="mb-2 text-ink-2">{t('team.invite.linkReady')}</p>
@@ -207,7 +218,7 @@ export function TeamInviteSheet({ open, onClose, roles, departments, onCreated }
           )}
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
             {t('team.invite.close')}
           </Button>
           <Button type="button" variant="brand" disabled={busy} onClick={() => void submit()}>
@@ -215,6 +226,6 @@ export function TeamInviteSheet({ open, onClose, roles, departments, onCreated }
           </Button>
         </div>
       </div>
-    </div>
+    </WorkspaceDialog>
   )
 }

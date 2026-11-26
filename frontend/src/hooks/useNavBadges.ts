@@ -8,7 +8,9 @@ export function useNavBadges(): NavBadges {
     [badges, setBadges] = useState<NavBadges>({})
   useEffect(() => {
     let active = true
+    let revision = 0
     async function load() {
+      const current = ++revision
       const requests = [
         ['tasks', 'tasks'],
         ['team', 'users'],
@@ -16,7 +18,8 @@ export function useNavBadges(): NavBadges {
       ] as const
       const entries = await Promise.all(
         requests.map(async ([key, resource]) => {
-          if (!userCan(user, `${resource}:read`)) return [key, undefined]
+          const allowed = resource === 'roles' ? userCan(user, 'roles:read', 'users:read') : userCan(user, `${resource}:read`)
+          if (!allowed) return [key, undefined]
           try {
             const items = (await apiClient.get(`/${resource}`)).data.data.items
             return [
@@ -38,7 +41,7 @@ export function useNavBadges(): NavBadges {
       } catch {
         /* optional badge */
       }
-      if (active) setBadges(Object.fromEntries(entries))
+      if (active && current === revision) setBadges(Object.fromEntries(entries))
     }
     void load()
     window.addEventListener('crm:changed', load)

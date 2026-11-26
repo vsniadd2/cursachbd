@@ -21,7 +21,10 @@ export const list: RequestHandler = async (req, res, next) => {
 
 export const create: RequestHandler = async (req, res, next) => {
   try {
-    const item = await service.createTask(req.body)
+    const item = await service.createTask(
+      req.validatedBody as Parameters<typeof service.createTask>[0],
+      req.user!.sub,
+    )
     res.status(201).json({ success: true, data: { item } })
   } catch (e) {
     next(e)
@@ -30,7 +33,11 @@ export const create: RequestHandler = async (req, res, next) => {
 
 export const update: RequestHandler = async (req, res, next) => {
   try {
-    const item = await service.updateTask(paramId(req)!, req.body)
+    const item = await service.updateTask(
+      paramId(req)!,
+      req.validatedBody as Parameters<typeof service.updateTask>[1],
+      req.user!.sub,
+    )
     res.json({ success: true, data: { item } })
   } catch (e) {
     next(e)

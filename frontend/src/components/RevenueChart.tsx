@@ -24,7 +24,7 @@ export function RevenueChart({
     new Date(`${m}-01T12:00:00Z`).toLocaleDateString(i18n.language, { month: 'short' })
   const isRu = i18n.language.startsWith('ru')
   return (
-    <section className="flex min-w-0 flex-col rounded-[14px] border border-line bg-surface px-4 pt-[18px] pb-[16px] sm:px-[18px]">
+    <section className="workspace-surface flex min-w-0 flex-col rounded-[14px] border border-line bg-surface px-4 pt-[18px] pb-[16px] sm:px-[18px]">
       <h2 className="text-[15px] tracking-[-0.005em]">{t('revenueChart.title')}</h2>
       <div className="mt-[18px] flex gap-2">
         <div className="relative mt-6 h-[246px] w-10 shrink-0">
@@ -39,9 +39,9 @@ export function RevenueChart({
           ))}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="overflow-hidden rounded-[8px] border border-[#efeff1]">
-            <div className="flex h-6 items-center justify-between border-b border-[#efeff1] px-2">
-              <span className="text-[18px] font-medium tabular">{money(series[active]?.actual ?? 0)}</span>
+          <div className="overflow-hidden rounded-[8px] border border-line">
+            <div className="flex min-h-6 flex-wrap items-center justify-between gap-x-2 border-b border-line px-2">
+              <span className="text-[16px] font-semibold tabular-nums [overflow-wrap:anywhere] sm:text-lg">{money(series[active]?.actual ?? 0)}</span>
               <span className="text-[11px] text-ink-2">
                 {series[active]?.month} · {isRu ? 'Оплачено' : 'Paid'}
               </span>
@@ -69,7 +69,7 @@ export function RevenueChart({
                 <path
                   d={area}
                   fill="none"
-                  stroke="#f3f3f4"
+                  stroke="var(--color-line)"
                   strokeWidth="16"
                   strokeLinejoin="round"
                   vectorEffect="non-scaling-stroke"

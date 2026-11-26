@@ -15,7 +15,7 @@ export function FlexoraChart({ children, title }: { children: ReactNode; title?:
 export const CHART_COLORS = {
   brand: 'var(--color-brand)',
   brand2: 'var(--color-brand-2)',
-  ink: '#17171a',
-  ink2: '#4b4b52',
-  pos: '#22b45e',
+  ink: 'var(--color-ink)',
+  ink2: 'var(--color-ink-2)',
+  pos: 'var(--color-pos)',
 } as const

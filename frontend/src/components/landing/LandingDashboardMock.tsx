@@ -1,71 +1,109 @@
 import { useTranslation } from 'react-i18next'
-import { useLandingTab } from '@/components/landing/LandingTabContext'
-
-const BARS = [72, 55, 88, 40]
-
+import { LandingReveal } from './LandingReveal'
 export function LandingDashboardMock() {
-  const { tab } = useLandingTab()
-  const { t } = useTranslation('landing')
-  const keys = ['k1', 'k2', 'k3'] as const
-  const values = ['v1', 'v2', 'v3'] as const
+  const { t, i18n } = useTranslation('landing')
+  const ru = i18n.resolvedLanguage?.startsWith('ru')
 
+  const metrics = ru
+    ? ['Клиенты', 'Проекты', 'Задачи', 'В работе', 'Бюджет', 'Выполнено']
+    : ['Clients', 'Projects', 'Tasks', 'Active', 'Budget', 'Completed']
   return (
-    <div className="relative mx-auto w-full max-w-[980px] pb-6 pt-10">
-      <div className="landing-float-card absolute left-0 top-0 z-10 hidden w-[220px] text-left md:block">
-        <p className="text-[13px] font-medium text-ink">{t('keitaro.dashboard.float1t')}</p>
-        <p className="mt-1 text-[12px] leading-snug text-ink-2">{t('keitaro.dashboard.float1d')}</p>
-      </div>
-      <div className="landing-float-card absolute right-2 top-6 z-10 hidden w-[200px] text-left lg:block">
-        <p className="text-[12px] font-medium text-pos">{t('keitaro.dashboard.float3t')}</p>
-        <p className="mt-1 text-[12px] text-ink-2">{t('keitaro.dashboard.float3d')}</p>
-      </div>
-      <div className="landing-float-card absolute bottom-0 right-8 z-10 hidden w-[210px] text-left md:block">
-        <p className="text-[13px] font-medium text-ink">{t('keitaro.dashboard.float2t')}</p>
-        <p className="mt-1 text-[12px] text-ink-2">{t('keitaro.dashboard.float2d')}</p>
-      </div>
-
-      <div className="overflow-hidden rounded-[16px] border border-line bg-surface">
-        <div className="flex items-center gap-2 border-b border-line bg-shell px-4 py-3">
-          <span className="size-2.5 rounded-full bg-[#ff5f57]" />
-          <span className="size-2.5 rounded-full bg-[#febc2e]" />
-          <span className="size-2.5 rounded-full bg-[#28c840]" />
-          <span className="ml-3 text-[12px] text-ink-2">app.flexora · {t(`keitaro.tabs.${tab}`)}</span>
-        </div>
-        <div className="grid gap-3 p-4 sm:grid-cols-[180px_1fr] sm:p-5">
-          <aside className="hidden flex-col gap-2 sm:flex">
-            {['CRM', 'Projects', 'Tasks', 'Jira'].map((item, i) => (
-              <div
-                key={item}
-                className={`rounded-[8px] px-3 py-2 text-[12px] ${i === 0 ? 'bg-brand-soft font-medium text-brand' : 'text-ink-2'}`}
-              >
-                {item}
+    <LandingReveal>
+      <div className="lp-dashboard-stage">
+        <span className="lp-annotation lp-annotation-left">
+          {t('keitaro.dashboard.float1t')}
+          <svg viewBox="0 0 90 45">
+            <path d="M5 5Q30 40 80 25m-13-5 13 5-10 10" />
+          </svg>
+        </span>
+        <span className="lp-annotation lp-annotation-right">
+          {t('keitaro.dashboard.float2t')}
+          <svg viewBox="0 0 90 45">
+            <path d="M85 5Q55 40 10 25m13-5-13 5 10 10" />
+          </svg>
+        </span>
+        <div className="lp-dashboard">
+          <div className="lp-report-head">
+            <strong>Flexora Dashboard</strong>
+            <span>{ru ? 'Этот месяц' : 'This month'} ⌄</span>
+          </div>
+          <div className="lp-metrics">
+            {metrics.map((m, i) => (
+              <div key={m}>
+                <span>{m}</span>
+                <strong>{['128', '24', '342', '18', '$42,860', '89%'][i]}</strong>
               </div>
             ))}
-          </aside>
-          <div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {keys.map((k, i) => (
-                <div key={k} className="rounded-[10px] border border-line bg-shell/60 p-3 text-left">
-                  <p className="text-[11px] text-ink-2">{t(`keitaro.mock.${tab}.${k}`)}</p>
-                  <p className="mt-1 text-[20px] font-medium tracking-tight text-ink">
-                    {t(`keitaro.mock.${tab}.${values[i]}`)}
-                  </p>
-                </div>
-              ))}
+          </div>
+          <div className="lp-chart">
+            <div className="lp-chart-axis">
+              <span>40k</span>
+              <span>30k</span>
+              <span>20k</span>
+              <span>10k</span>
             </div>
-            <div className="mt-4 space-y-2 rounded-[10px] border border-line p-3">
-              {BARS.map((w, idx) => (
-                <div key={idx} className="flex items-center gap-3">
-                  <span className="w-8 text-[11px] text-ink-3">Q{idx + 1}</span>
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">
-                    <div className="h-full rounded-full bg-brand" style={{ width: `${w}%` }} />
+            <svg
+              viewBox="0 0 800 210"
+              role="img"
+              aria-label={ru ? 'Пример графика проектов и выручки' : 'Sample project and revenue chart'}
+              preserveAspectRatio="none"
+            >
+              <defs>
+                <linearGradient id="lp-chart-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop stopColor="var(--color-brand)" stopOpacity=".3" />
+                  <stop offset="1" stopColor="var(--color-brand)" stopOpacity=".02" />
+                </linearGradient>
+              </defs>
+              {[40, 90, 140, 190].map((y) => (
+                <path key={y} d={`M0 ${y}H800`} stroke="var(--color-line)" />
+              ))}
+              <path
+                d="M0 160C70 160 70 70 150 90S270 165 340 100S450 130 520 75S650 85 700 40S770 35 800 15V210H0Z"
+                fill="url(#lp-chart-fill)"
+              />
+              <path
+                className="lp-chart-line"
+                pathLength="1"
+                d="M0 160C70 160 70 70 150 90S270 165 340 100S450 130 520 75S650 85 700 40S770 35 800 15"
+                fill="none"
+                stroke="var(--color-brand)"
+                strokeWidth="3"
+              />
+              <path
+                d="M0 180C100 170 140 130 220 150S320 185 400 145S540 130 600 115S740 135 800 80"
+                fill="none"
+                stroke="var(--color-brand-3)"
+                strokeWidth="2"
+              />
+            </svg>
+          </div>
+          <div className="lp-chart-months">
+            {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'].map((m) => (
+              <span key={m}>{m}</span>
+            ))}
+          </div>
+          <div className="lp-dashboard-tables">
+            {[0, 1].map((group) => (
+              <div key={group}>
+                <div className="lp-mini-toolbar">
+                  <span>{group === 0 ? (ru ? 'Проекты' : 'Projects') : ru ? 'Команда' : 'Team'}</span>
+                  <span>{ru ? 'Статус' : 'Status'}</span>
+                </div>
+                {(group === 0
+                  ? ['Platform Revamp', 'Discovery Sprint', 'Client Onboarding']
+                  : ['Engineering', 'Design', 'Sales']
+                ).map((name, i) => (
+                  <div className="lp-dash-row" key={name}>
+                    <span>{name}</span>
+                    <i style={{ width: `${45 + i * 12}%` }} />
+                    <span>{[82, 64, 91][i]}%</span>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ))}
           </div>
         </div>
       </div>
-    </div>
+    </LandingReveal>
   )
 }

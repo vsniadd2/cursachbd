@@ -67,7 +67,7 @@ export function TeamMemberList({ users, roles, departments, loading, onReload }:
   return (
     <div className="mt-6 space-y-3">
       {error && (
-        <p role="alert" className="text-red-700">
+        <p role="alert" className="text-danger">
           {error}
         </p>
       )}

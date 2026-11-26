@@ -5,9 +5,10 @@ import { LocaleLangToggle } from '@/components/LocaleLangToggle'
 
 type FooterLink = { to: string; label: string }
 
-function FooterColumn({ links }: { links: FooterLink[] }) {
+function FooterColumn({ links, title }: { links: FooterLink[]; title: string }) {
   return (
     <ul className="space-y-2.5">
+      <li className="mb-4 text-[15px] font-semibold text-ink">{title}</li>
       {links.map((link) => (
         <li key={link.label}>
           <Link to={link.to} className="text-[14px] text-ink-2 transition-colors hover:text-brand">
@@ -53,10 +54,24 @@ export function LandingClosingCta() {
       { to: '/login', label: t('keitaro.footer.privacy') },
     ],
   ]
+  const columnTitles = [
+    t('keitaro.footer.product'),
+    t('keitaro.footer.resources'),
+    t('keitaro.footer.help'),
+    t('keitaro.footer.social'),
+    t('keitaro.footer.company'),
+    t('keitaro.footer.legal'),
+  ]
 
   return (
     <footer id="closing" className="landing-bg-footer border-t border-line overflow-hidden pt-10 lg:pt-14">
       <div className="landing-container">
+        <div className="lp-closing-cta">
+          <h2 className="landing-h2">{t('keitaro.closing.title')}</h2>
+          <Link to="/register" className="landing-btn-primary">
+            {t('keitaro.closing.ctaPrimary')}
+          </Link>
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line/80 pb-8">
           <BrandLogo />
           <div className="hidden flex-wrap items-center gap-6 md:flex">
@@ -86,11 +101,13 @@ export function LandingClosingCta() {
 
         <div className="grid gap-8 py-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {columns.map((links, i) => (
-            <FooterColumn key={i} links={links} />
+            <FooterColumn key={i} links={links} title={columnTitles[i]} />
           ))}
         </div>
 
-        <p className="relative z-10 pb-2 text-[13px] text-ink-3">{t('keitaro.closing.copyright', { year })}</p>
+        <p className="relative z-10 pb-2 text-[13px] text-ink-3">
+          {t('keitaro.closing.copyright', { year })}
+        </p>
       </div>
 
       <div className="landing-container relative pb-6 pt-2">

@@ -15,9 +15,11 @@ import {
   createProjectSchema,
   updateProjectSchema,
   listProjectsQuerySchema,
+  projectMemberSchema,
+  projectSummaryQuerySchema,
 } from './modules/projects/projects.schema.js'
 import { createTaskSchema, updateTaskSchema, listTasksQuerySchema } from './modules/tasks/tasks.schema.js'
-import { invoiceBodySchema } from './modules/invoices/invoices.routes.js'
+import { invoiceBodySchema, invoiceListQuerySchema } from './modules/invoices/invoices.routes.js'
 import { workspaceBodySchema } from './modules/workspace/workspace.routes.js'
 
 type Operation = {
@@ -60,7 +62,7 @@ for (const [resource, create, update, query] of [
   ['clients', createClientSchema, updateClientSchema, listClientsQuerySchema],
   ['projects', createProjectSchema, updateProjectSchema, listProjectsQuerySchema],
   ['tasks', createTaskSchema, updateTaskSchema, listTasksQuerySchema],
-  ['invoices', invoiceBodySchema, invoiceBodySchema.partial(), undefined],
+  ['invoices', invoiceBodySchema, invoiceBodySchema.partial(), invoiceListQuerySchema],
 ] as const) {
   operations.push(
     { method: 'get', path: `/${resource}`, summary: `List ${resource} (requires ${resource}:read)`, query },
@@ -87,6 +89,22 @@ for (const [resource, create, update, query] of [
 }
 operations.push(
   { method: 'get', path: '/clients/{id}', summary: 'Get client' },
+  { method: 'get', path: '/projects/{id}', summary: 'Get project and its team (requires projects:read)' },
+  { method: 'get', path: '/projects/summary', summary: 'Get project totals by status and deadline', query: projectSummaryQuerySchema },
+  { method: 'get', path: '/projects/{id}/history', summary: 'Get the latest 50 project and team changes' },
+  {
+    method: 'put',
+    path: '/projects/{id}/members/{userId}',
+    summary: 'Assign a project role to an active team member',
+    body: projectMemberSchema,
+    status: 204,
+  },
+  {
+    method: 'delete',
+    path: '/projects/{id}/members/{userId}',
+    summary: 'Remove a member from the project team',
+    status: 204,
+  },
   {
     method: 'post',
     path: '/clients/import',
@@ -115,6 +133,7 @@ operations.push(
   },
   { method: 'delete', path: '/workspace/{id}', summary: 'Delete workspace item', status: 204 },
   { method: 'get', path: '/notifications', summary: 'Current user notifications' },
+  { method: 'patch', path: '/notifications/read-all', summary: 'Mark all own notifications read' },
   { method: 'patch', path: '/notifications/{id}/read', summary: 'Mark own notification read' },
   {
     method: 'get',

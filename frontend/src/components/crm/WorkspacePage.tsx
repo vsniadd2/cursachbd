@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Download, RefreshCw } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { userCan } from '@/lib/auth/permissions'
 import { apiClient } from '@/lib/api/client'
 import { useWords, errorText, exportCsv } from '@/lib/product'
 import { PageContent } from '@/components/app/PageContent'
 import { PageHeader } from '@/components/app/PageHeader'
+import { PageFeedback } from '@/components/app/PageFeedback'
+import { StatusBadge } from '@/components/app/StatusBadge'
 import { Button } from '@/components/ui/button'
 
 type Item = { id: string; title: string; body: string; status: string; runs: number; createdAt: string }
@@ -13,6 +16,7 @@ export function WorkspacePage({ kind }: { kind: 'CAMPAIGN' | 'EMAIL' | 'AUTOMATI
   const w = useWords(),
     { user } = useAuth()
   const canWrite = kind === 'FEEDBACK' || userCan(user, 'projects:write')
+  const form = useRef<HTMLFormElement>(null)
   const [items, setItems] = useState<Item[]>([]),
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
@@ -23,6 +27,8 @@ export function WorkspacePage({ kind }: { kind: 'CAMPAIGN' | 'EMAIL' | 'AUTOMATI
     [editing, setEditing] = useState<string | null>(null)
   const [message, setMessage] = useState('')
   const load = useCallback(async () => {
+    setLoading(true)
+    setError('')
     try {
       const { data } = await apiClient.get('/workspace', { params: { kind } })
       setItems(data.data.items)
@@ -37,6 +43,7 @@ export function WorkspacePage({ kind }: { kind: 'CAMPAIGN' | 'EMAIL' | 'AUTOMATI
     void load()
   }, [load])
   async function save() {
+    if (busy) return
     setBusy(true)
     setError('')
     setMessage('')
@@ -47,8 +54,9 @@ export function WorkspacePage({ kind }: { kind: 'CAMPAIGN' | 'EMAIL' | 'AUTOMATI
       setTitle('')
       setBody('')
       setStatus('DRAFT')
-      setMessage(w('Сохранено в базе', 'Saved to database'))
       await load()
+      setMessage(w('Сохранено в базе', 'Saved to database'))
+      if (kind === 'EMAIL') window.dispatchEvent(new Event('crm:changed'))
     } catch (e) {
       setError(errorText(e))
     } finally {
@@ -63,11 +71,15 @@ export function WorkspacePage({ kind }: { kind: 'CAMPAIGN' | 'EMAIL' | 'AUTOMATI
   }
   const [deleting, setDeleting] = useState<string | null>(null)
   async function remove() {
+    if (!deleting || busy) return
     setBusy(true)
+    setMessage('')
+    setError('')
     try {
       await apiClient.delete(`/workspace/${deleting}`)
       setDeleting(null)
       await load()
+      if (kind === 'EMAIL') window.dispatchEvent(new Event('crm:changed'))
     } catch (e) {
       setError(errorText(e))
     } finally {
@@ -92,31 +104,45 @@ export function WorkspacePage({ kind }: { kind: 'CAMPAIGN' | 'EMAIL' | 'AUTOMATI
               : w('История сохраняется после перезагрузки.', 'History persists after reload.')
         }
         actions={
-          <Button variant="outline" disabled={!items.length} onClick={() => exportCsv(`${kind}.csv`, items)}>
-            {w('Экспорт CSV', 'Export CSV')}
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              disabled={loading || !items.length}
+              onClick={() => exportCsv(`${kind}.csv`, items)}
+            >
+              <Download className="size-4" aria-hidden="true" />
+              {w('Экспорт CSV', 'Export CSV')}
+            </Button>
+            <Button variant="outline" disabled={loading || busy} onClick={() => void load()}>
+              <RefreshCw className="size-4" aria-hidden="true" />
+              {w('Обновить', 'Refresh')}
+            </Button>
+          </>
         }
       />
       {error && (
-        <p role="alert" className="mb-3 text-red-700">
+        <PageFeedback state="error" className="mb-3">
           {error}
-        </p>
+        </PageFeedback>
       )}
       {message && (
-        <p role="status" className="mb-3 text-pos">
+        <PageFeedback state="success" className="mb-3">
           {message}
-        </p>
+        </PageFeedback>
       )}
       {canWrite && (
         <form
-          className="mb-6 grid max-w-2xl gap-3 rounded-xl border border-line bg-surface p-5"
+          ref={form}
+          className="workspace-surface mb-6 grid max-w-2xl gap-4 rounded-xl border border-line bg-surface p-4 sm:p-5"
           onSubmit={(e) => {
             e.preventDefault()
             void save()
           }}
         >
           <label className="text-sm">
-            {kind === 'EMAIL' ? w('Тема письма', 'Subject') : w('Название', 'Title')}
+            <span className="mb-1.5 block font-medium">
+              {kind === 'EMAIL' ? w('Тема письма', 'Subject') : w('Название', 'Title')}
+            </span>
             <input
               className={style}
               required
@@ -126,7 +152,7 @@ export function WorkspacePage({ kind }: { kind: 'CAMPAIGN' | 'EMAIL' | 'AUTOMATI
             />
           </label>
           <label className="text-sm">
-            {w('Содержание', 'Content')}
+            <span className="mb-1.5 block font-medium">{w('Содержание', 'Content')}</span>
             <textarea
               className={style}
               rows={4}
@@ -138,7 +164,7 @@ export function WorkspacePage({ kind }: { kind: 'CAMPAIGN' | 'EMAIL' | 'AUTOMATI
           </label>
           {kind !== 'FEEDBACK' && (
             <label className="text-sm">
-              {w('Статус', 'Status')}
+              <span className="mb-1.5 block font-medium">{w('Статус', 'Status')}</span>
               <select className={style} value={status} onChange={(e) => setStatus(e.target.value)}>
                 {(kind === 'EMAIL' ? ['DRAFT', 'COMPLETED'] : ['DRAFT', 'ACTIVE', 'PAUSED', 'COMPLETED']).map(
                   (s) => (
@@ -150,12 +176,17 @@ export function WorkspacePage({ kind }: { kind: 'CAMPAIGN' | 'EMAIL' | 'AUTOMATI
           )}
           <div className="flex gap-2">
             <Button variant="brand" disabled={busy}>
-              {editing ? w('Сохранить изменения', 'Save changes') : w('Создать', 'Create')}
+              {busy
+                ? w('Сохранение…', 'Saving…')
+                : editing
+                  ? w('Сохранить изменения', 'Save changes')
+                  : w('Создать', 'Create')}
             </Button>
             {editing && (
               <Button
                 type="button"
                 variant="outline"
+                disabled={busy}
                 onClick={() => {
                   setEditing(null)
                   setTitle('')
@@ -173,26 +204,29 @@ export function WorkspacePage({ kind }: { kind: 'CAMPAIGN' | 'EMAIL' | 'AUTOMATI
         <div
           role="alertdialog"
           aria-label={w('Подтверждение удаления', 'Confirm deletion')}
-          className="mb-4 rounded-xl border border-line p-4"
+          className="workspace-enter mb-4 rounded-xl border border-danger-line bg-danger-soft p-4"
         >
-          <p>{w('Удалить запись навсегда?', 'Delete this record permanently?')}</p>
+          <p className="mb-3">{w('Удалить запись навсегда?', 'Delete this record permanently?')}</p>
           <Button disabled={busy} onClick={() => void remove()}>
             {w('Удалить навсегда', 'Delete permanently')}
           </Button>{' '}
-          <Button variant="outline" onClick={() => setDeleting(null)}>
+          <Button variant="outline" disabled={busy} onClick={() => setDeleting(null)}>
             {w('Отмена', 'Cancel')}
           </Button>
         </div>
       )}
-      {loading ? (
-        <p>{w('Загрузка…', 'Loading…')}</p>
+      {loading && !message ? (
+        <PageFeedback state="loading">{w('Загрузка…', 'Loading…')}</PageFeedback>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {items.map((item) => (
-            <article key={item.id} className="rounded-xl border border-line bg-surface p-5">
-              <div className="flex justify-between gap-3">
-                <h3 className="font-medium">{item.title}</h3>
-                <span className="text-xs text-ink-2">{item.status}</span>
+            <article
+              key={item.id}
+              className="workspace-surface workspace-interactive min-w-0 rounded-xl border border-line bg-surface p-4 sm:p-5"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <h3 className="min-w-0 font-medium [overflow-wrap:anywhere]">{item.title}</h3>
+                <StatusBadge value={item.status} />
               </div>
               <p className="my-3 whitespace-pre-wrap break-words text-sm text-ink-2">{item.body}</p>
               <p className="text-xs text-ink-2">
@@ -204,17 +238,30 @@ export function WorkspacePage({ kind }: { kind: 'CAMPAIGN' | 'EMAIL' | 'AUTOMATI
                   <Button
                     variant="outline"
                     size="sm"
+                    disabled={busy}
                     onClick={() => {
                       setEditing(item.id)
                       setTitle(item.title)
                       setBody(item.body)
                       setStatus(item.status)
-                      window.scrollTo(0, 0)
+                      setError('')
+                      setMessage('')
+                      form.current?.scrollIntoView({ block: 'nearest' })
+                      form.current?.querySelector('input')?.focus({ preventScroll: true })
                     }}
                   >
                     {w('Изменить', 'Edit')}
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setDeleting(item.id)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => {
+                      setDeleting(item.id)
+                      setMessage('')
+                      setError('')
+                    }}
+                  >
                     {w('Удалить', 'Delete')}
                   </Button>
                 </div>
@@ -223,8 +270,12 @@ export function WorkspacePage({ kind }: { kind: 'CAMPAIGN' | 'EMAIL' | 'AUTOMATI
           ))}
         </div>
       )}
-      {!loading && !items.length && (
-        <p>{w('Здесь пока пусто. Создайте первую запись.', 'No records yet. Create the first one.')}</p>
+      {!loading && !error && !items.length && (
+        <PageFeedback state="empty">
+          {canWrite
+            ? w('Здесь пока пусто. Создайте первую запись.', 'No records yet. Create the first one.')
+            : w('Записей пока нет.', 'No records yet.')}
+        </PageFeedback>
       )}
     </PageContent>
   )

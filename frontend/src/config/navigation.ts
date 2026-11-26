@@ -3,9 +3,8 @@ import type { TFunction } from 'i18next'
 import {
   LayoutGrid,
   Database,
-  Newspaper,
+  FolderKanban,
   User,
-  Workflow,
   CheckSquare,
   BarChart3,
   CircleDollarSign,
@@ -35,9 +34,8 @@ export type NavItemConfig = {
 const entries: Omit<NavItemConfig, 'section'>[] = [
   { path: '/dashboard', labelKey: 'items.dashboard', icon: LayoutGrid },
   { path: '/leads', labelKey: 'items.leads', icon: Database },
-  { path: '/deals', labelKey: 'items.deals', icon: Newspaper },
   { path: '/customers', labelKey: 'items.customers', icon: User },
-  { path: '/pipeline', labelKey: 'items.pipeline', icon: Workflow },
+  { path: '/projects', labelKey: 'items.projects', icon: FolderKanban },
   { path: '/tasks', labelKey: 'items.tasks', icon: CheckSquare, badgeKey: 'tasks' },
   { path: '/analytics', labelKey: 'items.analytics', icon: BarChart3 },
   { path: '/revenue', labelKey: 'items.revenue', icon: CircleDollarSign },
@@ -57,9 +55,8 @@ const entries: Omit<NavItemConfig, 'section'>[] = [
 const sectionByPath: Record<string, NavSection> = {
   '/dashboard': 'main',
   '/leads': 'main',
-  '/deals': 'main',
   '/customers': 'main',
-  '/pipeline': 'main',
+  '/projects': 'main',
   '/tasks': 'main',
   '/analytics': 'sales',
   '/revenue': 'sales',
@@ -97,9 +94,9 @@ export function getPageMeta(pathname: string, t: TFunction<'nav'>): { title: str
       subtitle: t('subtitles./pricing'),
     }
   }
-  const item = NAV_BY_PATH[pathname] ?? NAVIGATION[0]
+  const item = NAV_BY_PATH[pathname] ?? NAV_BY_PATH[`/${pathname.split('/')[1]}`] ?? NAVIGATION[0]
   const pageTitle = t(item.labelKey)
-  const subtitle = t(`subtitles.${pathname}`, {
+  const subtitle = t(`subtitles.${item.path}`, {
     defaultValue: t('subtitles.default', { page: pageTitle }),
   })
   return { title: pageTitle, subtitle }

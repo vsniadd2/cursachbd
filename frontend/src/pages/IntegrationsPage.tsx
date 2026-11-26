@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { userCan } from '@/lib/auth/permissions'
 import { PageContent } from '@/components/app/PageContent'
 import { PageHeader } from '@/components/app/PageHeader'
+import { PageFeedback } from '@/components/app/PageFeedback'
 import { PageSection } from '@/components/app/PageSection'
 import { Button } from '@/components/ui/button'
 export function IntegrationsPage() {
@@ -14,8 +15,10 @@ export function IntegrationsPage() {
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false)
   async function exportData() {
+    if (busy) return
     setBusy(true)
     setError('')
+    setMessage('')
     try {
       const { data } = await apiClient.get('/clients')
       download(
@@ -41,15 +44,30 @@ export function IntegrationsPage() {
     }
   }
   async function importData(file?: File) {
-    if (!file) return
+    if (!file || busy) return
     setError('')
     setMessage('')
     setBusy(true)
     try {
       if (file.size > 500000) throw new Error(w('Максимум 500 КБ', 'Maximum 500 KB'))
-      const records = JSON.parse(await file.text())
-      await apiClient.post('/clients/import', { items: records })
-      setMessage(w(`Импортировано записей: ${records.length}`, `Imported records: ${records.length}`))
+      let records: unknown
+      try {
+        records = JSON.parse(await file.text())
+      } catch {
+        throw new Error(w('Не удалось прочитать JSON-файл.', 'Could not read the JSON file.'))
+      }
+      if (!Array.isArray(records) || records.length === 0 || records.length > 500) {
+        throw new Error(
+          w(
+            'Файл должен содержать массив из 1–500 записей.',
+            'The file must contain an array of 1–500 records.',
+          ),
+        )
+      }
+      const { data } = await apiClient.post<{ data: { count: number } }>('/clients/import', {
+        items: records,
+      })
+      setMessage(w(`Импортировано записей: ${data.data.count}`, `Imported records: ${data.data.count}`))
     } catch (e) {
       setError(errorText(e))
     } finally {
@@ -66,14 +84,14 @@ export function IntegrationsPage() {
         )}
       />
       {error && (
-        <p role="alert" className="mb-4 text-red-700">
+        <PageFeedback state="error" className="mb-4">
           {error}
-        </p>
+        </PageFeedback>
       )}
       {message && (
-        <p role="status" className="mb-4 text-pos">
+        <PageFeedback state="success" className="mb-4">
           {message}
-        </p>
+        </PageFeedback>
       )}
       <PageSection>
         <h2 className="mb-3 text-lg">JSON</h2>
@@ -88,10 +106,10 @@ export function IntegrationsPage() {
             {w('Скачать клиентов', 'Download clients')}
           </Button>
           {userCan(user, 'clients:write') && (
-            <label className="text-sm">
+            <label className="grid min-w-0 gap-1.5 text-sm font-medium">
               {w('Загрузить JSON', 'Upload JSON')}
               <input
-                className="ml-2"
+                className="w-full max-w-full text-xs file:mr-2 file:rounded-lg file:border file:border-line file:bg-shell file:px-3 file:py-2"
                 type="file"
                 accept=".json,application/json"
                 disabled={busy}

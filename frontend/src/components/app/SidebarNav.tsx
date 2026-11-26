@@ -2,16 +2,18 @@ import { Link, NavLink, useMatch } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Rocket, ChevronRight, PanelLeft, PanelLeftClose } from 'lucide-react'
 import { NAVIGATION, SECTION_LABEL_KEYS, type NavItemConfig } from '@/config/navigation'
-import { useNavBadges } from '@/hooks/useNavBadges'
+import type { NavBadges } from '@/hooks/useNavBadges'
 import { cn } from '@/lib/utils'
 
 export function SidebarNav({
+  badges,
   onNavigate,
   showCollapse = true,
   compact = false,
   onToggleCompact,
   className,
 }: {
+  badges: NavBadges
   onNavigate?: () => void
   showCollapse?: boolean
   compact?: boolean
@@ -20,7 +22,6 @@ export function SidebarNav({
 }) {
   const { t } = useTranslation('nav')
   const { t: tc } = useTranslation('common')
-  const badges = useNavBadges()
   const sections: (keyof typeof SECTION_LABEL_KEYS)[] = ['main', 'sales', 'tools', 'team']
   const footer = NAVIGATION.filter((n) => n.section === 'footer')
 
@@ -67,14 +68,14 @@ export function SidebarNav({
         )}
       </div>
 
-      <div className={cn('flex min-h-0 flex-1 flex-col overflow-y-auto py-2', compact ? 'px-1' : 'px-2')}>
+      <nav aria-label={t('dashboardAria')} className={cn('flex min-h-0 flex-1 flex-col overflow-y-auto py-2', compact ? 'px-1' : 'px-2')}>
         {sections.map((section, idx) => (
           <Section key={section} label={t(SECTION_LABEL_KEYS[section])} first={idx === 0} compact={compact}>
             {NAVIGATION.filter((n) => n.section === section).map((item) => (
               <NavItem
                 key={item.path}
                 item={item}
-                badge={badgeFor(item, badges)}
+                badge={item.badgeKey && badges[item.badgeKey]}
                 onNavigate={onNavigate}
                 compact={compact}
               />
@@ -110,14 +111,9 @@ export function SidebarNav({
             )}
           </Link>
         </div>
-      </div>
+      </nav>
     </div>
   )
-}
-
-function badgeFor(item: NavItemConfig, badges: ReturnType<typeof useNavBadges>) {
-  if (!item.badgeKey) return undefined
-  return badges[item.badgeKey]
 }
 
 function Section({
@@ -199,7 +195,7 @@ function NavItem({
       </span>
       {!compact && <span className="flex-1 truncate">{label}</span>}
       {!compact && badge != null && (
-        <span className="rounded-[4px] bg-[#ececee] px-[5px] py-[1px] text-[9.5px] tabular text-ink">
+        <span className="rounded-[4px] bg-cell px-[5px] py-[1px] text-[9.5px] tabular text-ink">
           {badge}
         </span>
       )}

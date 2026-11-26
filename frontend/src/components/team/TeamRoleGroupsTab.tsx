@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { WorkspaceDialog } from '@/components/app/WorkspaceDialog'
+import { PageFeedback } from '@/components/app/PageFeedback'
 import { createRole, deleteRole, fetchRoles, updateRole } from '@/services/roles.service'
 import {
   createCustomPermission,
@@ -101,10 +103,10 @@ export function TeamRoleGroupsTab() {
 
   return (
     <div className="space-y-6">
-      {error && (
-        <p role="alert" className="text-red-700">
+      {error && !editing && (
+        <PageFeedback state="error" className="mb-3">
           {error}
-        </p>
+        </PageFeedback>
       )}
       {deleting && (
         <div role="alertdialog">
@@ -191,7 +193,7 @@ export function TeamRoleGroupsTab() {
         {roles.map((role) => (
           <article
             key={role.id}
-            className="rounded-[14px] border border-line bg-surface p-5 shadow-[0_2px_16px_rgba(23,23,26,0.04)]"
+            className="rounded-[14px] border border-line bg-surface p-5 shadow-[0_2px_16px_rgba(112,57,30,0.04)]"
           >
             <div className="flex items-start gap-3">
               <span className="grid size-10 place-items-center rounded-[10px] border border-brand/20 bg-brand-soft text-brand">
@@ -246,10 +248,11 @@ export function TeamRoleGroupsTab() {
       </div>
 
       {editing && (
-        <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-ink/30 p-4"
-          role="dialog"
-          aria-modal
+        <WorkspaceDialog
+          label={t('team.groups.editTitle', { name: editing.name })}
+          onClose={() => setEditing(null)}
+          dismissible={!busy}
+          className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-2xl"
         >
           <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-[14px] border border-line bg-surface p-5">
             <h3 className="text-[15px] font-medium">{t('team.groups.editTitle', { name: editing.name })}</h3>
@@ -267,6 +270,11 @@ export function TeamRoleGroupsTab() {
                 </label>
               ))}
             </div>
+            {error && (
+              <PageFeedback state="error" className="mt-3">
+                {error}
+              </PageFeedback>
+            )}
             <div className="mt-4 flex justify-end gap-2">
               <Button disabled={busy} type="button" variant="ghost" onClick={() => setEditing(null)}>
                 {t('team.cancel')}
@@ -276,7 +284,7 @@ export function TeamRoleGroupsTab() {
               </Button>
             </div>
           </div>
-        </div>
+        </WorkspaceDialog>
       )}
     </div>
   )

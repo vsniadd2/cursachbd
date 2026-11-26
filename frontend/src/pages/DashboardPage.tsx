@@ -4,6 +4,7 @@ import { Touchpoints } from '@/components/Touchpoints'
 import { LeadActivity } from '@/components/LeadActivity'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ChartNoAxesCombined, CircleCheck, ClipboardList, Download, RefreshCw, Users } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { useCrmData } from '@/hooks/useCrmData'
 import { summarize } from '@/lib/analytics'
@@ -11,7 +12,9 @@ import { useWords, exportCsv } from '@/lib/product'
 import { useAuth } from '@/contexts/AuthContext'
 import { userCan } from '@/lib/auth/permissions'
 import { PageContent } from '@/components/app/PageContent'
+import { PageFeedback } from '@/components/app/PageFeedback'
 import { PageSection } from '@/components/app/PageSection'
+import { StatusBadge } from '@/components/app/StatusBadge'
 import { ScoreGauge } from '@/components/ScoreGauge'
 import { Button } from '@/components/ui/button'
 export function DashboardPage() {
@@ -33,18 +36,53 @@ export function MetricsPage({ mode }: { mode: 'dashboard' | 'analytics' | 'repor
     forecast: w('Прогноз', 'Forecast'),
   }
   const financial = userCan(user, 'invoices:read')
+  const canReadClients = userCan(user, 'clients:read')
+  const canReadProjects = userCan(user, 'projects:read')
+  const canReadTasks = userCan(user, 'tasks:read')
   const money = (n: number, c = currency) =>
-    new Intl.NumberFormat(undefined, { style: 'currency', currency: c, maximumFractionDigits: 2 }).format(n)
+    new Intl.NumberFormat(w('ru-RU', 'en-US'), { style: 'currency', currency: c, maximumFractionDigits: 2 }).format(n)
   const cards = [
     {
-      title: w('Активная воронка (USD)', 'Active pipeline (USD)'),
+      title: w('Бюджет открытых проектов (USD)', 'Open project budget (USD)'),
       value: money(m.pipeline, 'USD'),
-      link: '/deals',
+      link: '/projects',
+      icon: ChartNoAxesCombined,
+      visible: canReadProjects,
     },
-    { title: w('Лиды / клиенты', 'Leads / customers'), value: `${m.leads} / ${m.customers}`, link: '/leads' },
-    { title: w('Закрытые сделки', 'Won deals'), value: m.won, link: '/deals' },
-    { title: w('Открытые задачи', 'Open tasks'), value: m.openTasks, link: '/tasks' },
-  ]
+    {
+      title: w('Лиды / клиенты', 'Leads / customers'),
+      value: `${m.leads} / ${m.customers}`,
+      link: '/leads',
+      icon: Users,
+      visible: canReadClients,
+    },
+    {
+      title: w('Завершённые проекты', 'Completed projects'),
+      value: m.won,
+      link: '/projects?status=COMPLETED',
+      icon: CircleCheck,
+      visible: canReadProjects,
+    },
+    {
+      title: w('Открытые задачи', 'Open tasks'),
+      value: m.openTasks,
+      link: '/tasks',
+      icon: ClipboardList,
+      visible: canReadTasks,
+    },
+  ].filter((card) => card.visible)
+  const reportRows = {
+    clients: data.clients.filter((row) => !since || (row.createdAt ?? '') >= since),
+    projects: data.projects.filter((row) => !since || (row.createdAt ?? '') >= since),
+    tasks: data.tasks.filter((row) => !since || (row.createdAt ?? '') >= since),
+    invoices: data.invoices.filter(
+      (row) =>
+        !since ||
+        (row.status === 'PAID'
+          ? (row.paidAt ?? row.updatedAt ?? '') >= since
+          : (row.createdAt ?? '') >= since),
+    ),
+  }
   const chart =
     mode === 'forecast'
       ? [...m.months, { month: w('Следующий месяц', 'Next month'), actual: undefined, projected: m.forecast }]
@@ -52,8 +90,8 @@ export function MetricsPage({ mode }: { mode: 'dashboard' | 'analytics' | 'repor
   return (
     <PageContent>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg">{titles[mode]}</h2>
-        <div className="flex flex-wrap gap-2">
+        <h2 className="text-xl font-semibold tracking-tight">{titles[mode]}</h2>
+        <div className="workspace-toolbar flex w-full flex-wrap gap-2 lg:w-auto">
           <select
             aria-label={w('Период', 'Period')}
             className="rounded-lg border border-line bg-surface p-2 text-sm"
@@ -69,6 +107,7 @@ export function MetricsPage({ mode }: { mode: 'dashboard' | 'analytics' | 'repor
             aria-label={w('Валюта', 'Currency')}
             className="rounded-lg border border-line bg-surface p-2 text-sm"
             value={currency}
+            disabled={!financial}
             onChange={(e) => setCurrency(e.target.value)}
           >
             {['USD', 'EUR', 'BYN'].map((c) => (
@@ -76,236 +115,228 @@ export function MetricsPage({ mode }: { mode: 'dashboard' | 'analytics' | 'repor
             ))}
           </select>
           <Button variant="outline" disabled={data.loading} onClick={() => void data.load()}>
+            <RefreshCw className="size-4" aria-hidden="true" />
             {w('Обновить', 'Refresh')}
           </Button>
           <Button
-            disabled={data.loading}
+            disabled={data.loading || Boolean(data.error) || !data.loaded || (!cards.length && !financial)}
             onClick={() =>
               exportCsv('summary.csv', [
                 {
                   currency,
                   period: period || 'all',
-                  leads: m.leads,
-                  customers: m.customers,
-                  won: m.won,
-                  pipelineUSD: m.pipeline,
+                  ...(canReadClients ? { leads: m.leads, customers: m.customers } : {}),
+                  ...(canReadProjects ? { completedProjects: m.won, openProjectBudgetUSD: m.pipeline } : {}),
                   ...(financial ? { paid: m.paid, outstanding: m.outstanding } : {}),
                 },
               ])
             }
           >
+            <Download className="size-4" aria-hidden="true" />
             {w('Экспорт CSV', 'Export CSV')}
           </Button>
         </div>
       </div>
       {data.error && (
-        <p role="alert" className="mb-4 text-red-700">
+        <PageFeedback state="error" className="mb-4">
           {data.error}
-        </p>
+        </PageFeedback>
       )}
       {data.loading ? (
-        <p role="status">{w('Загрузка…', 'Loading…')}</p>
+        <PageFeedback state="loading">{w('Загрузка…', 'Loading…')}</PageFeedback>
       ) : (
-        <>
-          {mode === 'dashboard' ? (
-            <StatCards
-              metrics={cards.map((c) => ({
-                title: c.title,
-                value: String(c.value),
-                caption: w('За выбранный период', 'Selected period'),
-              }))}
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {cards.map((c) => (
-                <Link
-                  key={c.link + c.title}
-                  to={c.link}
-                  className="rounded-xl border border-line bg-surface p-5 transition-colors hover:border-brand"
-                >
-                  <p className="text-sm text-ink-2">{c.title}</p>
-                  <p className="my-6 text-3xl tabular-nums">{c.value}</p>
-                  <p className="text-xs text-ink-2">{w('Открыть раздел →', 'Open section →')}</p>
-                </Link>
-              ))}
-            </div>
-          )}
-          <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_351px]">
-            {mode === 'dashboard' && financial ? (
-              <RevenueChart series={m.months} currency={currency} />
-            ) : (
-              <PageSection>
-                <h2 className="mb-5 text-lg">
-                  {w('Оплаченная выручка', 'Paid revenue')} · {currency}
-                </h2>
-                {financial ? (
-                  <>
-                    <div className="mb-5 flex flex-wrap justify-between gap-3">
-                      <p>
-                        {w('Оплачено', 'Paid')}: <strong>{money(m.paid)}</strong>
-                      </p>
-                      <p>
-                        {w('К оплате', 'Outstanding')}: <strong>{money(m.outstanding)}</strong>
-                      </p>
-                    </div>
-                    <div className="h-72 min-w-0">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chart}>
-                          <defs>
-                            <pattern
-                              id="revenue-hatch"
-                              width="10"
-                              height="10"
-                              patternUnits="userSpaceOnUse"
-                              patternTransform="rotate(45)"
-                            >
-                              <rect width="10" height="10" fill="var(--color-brand-soft)" />
-                              <rect width="4" height="10" fill="var(--color-brand-3)" />
-                            </pattern>
-                          </defs>
-                          <CartesianGrid stroke="#eee" vertical={false} />
-                          <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                          <YAxis width={65} tick={{ fontSize: 11 }} />
-                          <Tooltip />
-                          <Area
-                            name={w('Выручка', 'Revenue')}
-                            dataKey="actual"
-                            stroke="var(--color-brand)"
-                            strokeWidth={2}
-                            fill="url(#revenue-hatch)"
-                          />
-                          <Area
-                            name={w('Прогноз', 'Forecast')}
-                            dataKey="projected"
-                            stroke="#555"
-                            fill="#ddd"
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </div>
-                    {mode === 'forecast' && (
-                      <p className="mt-4 text-sm text-ink-2">
-                        {w(
-                          'Оценка следующего месяца — средняя оплаченная выручка за последние 3 календарных месяца, включая текущий. Это не гарантия дохода.',
-                          'Next month estimate is the average paid revenue over the last 3 calendar months including the current month. It is not guaranteed income.',
-                        )}{' '}
-                        {money(m.forecast)}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p>
+        data.loaded && (
+          <>
+            {cards.length > 0 && (
+              <StatCards metrics={cards} caption={w('За выбранный период', 'Selected period')} />
+            )}
+            <div className={`mt-5 grid gap-5 ${canReadProjects ? 'xl:grid-cols-[minmax(0,1fr)_351px]' : ''}`}>
+              {mode === 'dashboard' && financial ? (
+                <RevenueChart series={m.months} currency={currency} />
+              ) : (
+                <PageSection>
+                  <h2 className="mb-5 text-lg">
+                    {w('Оплаченная выручка', 'Paid revenue')} · {currency}
+                  </h2>
+                  {financial ? (
+                    <>
+                      <div className="mb-5 flex flex-wrap justify-between gap-3">
+                        <p>
+                          {w('Оплачено', 'Paid')}: <strong>{money(m.paid)}</strong>
+                        </p>
+                        <p>
+                          {w('К оплате', 'Outstanding')}: <strong>{money(m.outstanding)}</strong>
+                        </p>
+                      </div>
+                      <div className="h-72 min-w-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={chart}>
+                            <defs>
+                              <pattern
+                                id="revenue-hatch"
+                                width="10"
+                                height="10"
+                                patternUnits="userSpaceOnUse"
+                                patternTransform="rotate(45)"
+                              >
+                                <rect width="10" height="10" fill="var(--color-brand-soft)" />
+                                <rect width="4" height="10" fill="var(--color-brand-3)" />
+                              </pattern>
+                            </defs>
+                            <CartesianGrid stroke="var(--color-line)" vertical={false} />
+                            <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                            <YAxis width={65} tick={{ fontSize: 11 }} />
+                            <Tooltip />
+                            <Area
+                              isAnimationActive={false}
+                              name={w('Выручка', 'Revenue')}
+                              dataKey="actual"
+                              stroke="var(--color-brand)"
+                              strokeWidth={2}
+                              fill="url(#revenue-hatch)"
+                            />
+                            <Area
+                              isAnimationActive={false}
+                              name={w('Прогноз', 'Forecast')}
+                              dataKey="projected"
+                              stroke="var(--color-brand-strong)"
+                              fill="var(--color-brand-3)"
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                      {mode === 'forecast' && (
+                        <p className="mt-4 text-sm text-ink-2">
+                          {w(
+                            'Оценка следующего месяца — средняя оплаченная выручка за последние 3 календарных месяца, включая текущий. Это не гарантия дохода.',
+                            'Next month estimate is the average paid revenue over the last 3 calendar months including the current month. It is not guaranteed income.',
+                          )}{' '}
+                          {money(m.forecast)}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p>
+                      {w(
+                        'Для просмотра выручки нужны права invoices:read.',
+                        'Revenue requires invoices:read permission.',
+                      )}
+                    </p>
+                  )}
+                </PageSection>
+              )}
+              {canReadProjects && (
+                <div>
+                  <ScoreGauge score={m.score} />
+                  <p className="mt-2 text-xs text-ink-2">
                     {w(
-                      'Для просмотра выручки нужны права invoices:read.',
-                      'Revenue requires invoices:read permission.',
+                      'Доля завершённых проектов среди всех неотменённых проектов выбранного периода.',
+                      'Completed projects divided by all non-cancelled projects in the selected period.',
                     )}
                   </p>
+                </div>
+              )}
+            </div>
+            {mode === 'dashboard' ? (
+              canReadClients && (
+                <div className="mt-[19px] grid grid-cols-1 gap-[19px] xl:grid-cols-[351px_1fr]">
+                  <Touchpoints
+                    title={w('Клиенты по статусу', 'Clients by status')}
+                    segments={[
+                      { label: w('Лиды', 'Leads'), value: m.leads },
+                      { label: w('Активные', 'Active'), value: m.customers },
+                      {
+                        label: w('Неактивные', 'Inactive'),
+                        value: data.clients.filter(
+                          (r) =>
+                            ['INACTIVE', 'CHURNED'].includes(r.status) &&
+                            (!since || (r.createdAt ?? '') >= since),
+                        ).length,
+                      },
+                    ]}
+                  />
+                  <LeadActivity
+                    title={w('Создание клиентов по дням недели', 'Client creation by weekday')}
+                    activity={[
+                      { label: w('Лиды', 'Leads'), status: 'LEAD' },
+                      { label: w('Клиенты', 'Customers'), status: 'ACTIVE' },
+                      { label: w('Прочие', 'Other'), status: 'OTHER' },
+                    ].map((group) => ({
+                      label: group.label,
+                      values: Array.from(
+                        { length: 7 },
+                        (_, day) =>
+                          data.clients.filter(
+                            (r) =>
+                              (group.status === 'OTHER'
+                                ? ['INACTIVE', 'CHURNED'].includes(r.status)
+                                : r.status === group.status) &&
+                              (!since || (r.createdAt ?? '') >= since) &&
+                              r.createdAt &&
+                              new Date(r.createdAt).getUTCDay() === day,
+                          ).length,
+                      ),
+                    }))}
+                  />
+                </div>
+              )
+            ) : (
+              <div className="mt-5 grid gap-5 md:grid-cols-2">
+                {canReadClients && (
+                  <PageSection>
+                    <h2 className="mb-3 text-lg">{w('Последние клиенты', 'Recent clients')}</h2>
+                    {reportRows.clients.slice(0, 5).map((r) => (
+                      <Link
+                        className="flex justify-between border-t border-line py-3 text-sm"
+                        key={r.id}
+                        to="/customers"
+                      >
+                        <span>{r.companyName}</span>
+                        <StatusBadge value={r.status} />
+                      </Link>
+                    ))}
+                    {!reportRows.clients.length && <p>{w('Пока нет клиентов', 'No clients yet')}</p>}
+                  </PageSection>
                 )}
-              </PageSection>
+                {canReadTasks && (
+                  <PageSection>
+                    <h2 className="mb-3 text-lg">{w('Открытые задачи', 'Open tasks')}</h2>
+                    {reportRows.tasks
+                      .filter((r) => !['DONE', 'CANCELLED'].includes(r.status))
+                      .slice(0, 5)
+                      .map((r) => (
+                        <Link
+                          className="flex justify-between gap-3 border-t border-line py-3 text-sm"
+                          key={r.id}
+                          to="/tasks"
+                        >
+                          <span>{r.title}</span>
+                          <StatusBadge value={r.status} />
+                        </Link>
+                      ))}
+                    {!m.openTasks && <p>{w('Нет открытых задач', 'No open tasks')}</p>}
+                  </PageSection>
+                )}
+              </div>
             )}
-            <div>
-              <ScoreGauge score={m.score} />
-              <p className="mt-2 text-xs text-ink-2">
-                {w(
-                  'Доля завершённых сделок среди всех неотменённых сделок выбранного периода.',
-                  'Completed deals divided by all non-cancelled deals in the selected period.',
-                )}
-              </p>
-            </div>
-          </div>
-          {mode === 'dashboard' ? (
-            <div className="mt-[19px] grid grid-cols-1 gap-[19px] xl:grid-cols-[351px_1fr]">
-              <Touchpoints
-                title={w('Клиенты по статусу', 'Clients by status')}
-                segments={[
-                  { label: w('Лиды', 'Leads'), value: m.leads },
-                  { label: w('Активные', 'Active'), value: m.customers },
-                  {
-                    label: w('Неактивные', 'Inactive'),
-                    value: data.clients.filter(
-                      (r) =>
-                        ['INACTIVE', 'CHURNED'].includes(r.status) &&
-                        (!since || (r.createdAt ?? '') >= since),
-                    ).length,
-                  },
-                ]}
-              />
-              <LeadActivity
-                title={w('Создание клиентов по дням недели', 'Client creation by weekday')}
-                activity={[
-                  { label: w('Лиды', 'Leads'), status: 'LEAD' },
-                  { label: w('Клиенты', 'Customers'), status: 'ACTIVE' },
-                  { label: w('Прочие', 'Other'), status: 'OTHER' },
-                ].map((group) => ({
-                  label: group.label,
-                  values: Array.from(
-                    { length: 7 },
-                    (_, day) =>
-                      data.clients.filter(
-                        (r) =>
-                          (group.status === 'OTHER'
-                            ? ['INACTIVE', 'CHURNED'].includes(r.status)
-                            : r.status === group.status) &&
-                          (!since || (r.createdAt ?? '') >= since) &&
-                          r.createdAt &&
-                          new Date(r.createdAt).getUTCDay() === day,
-                      ).length,
-                  ),
-                }))}
-              />
-            </div>
-          ) : (
-            <div className="mt-5 grid gap-5 md:grid-cols-2">
-              <PageSection>
-                <h2 className="mb-3 text-lg">{w('Последние клиенты', 'Recent clients')}</h2>
-                {data.clients.slice(0, 5).map((r) => (
-                  <Link
-                    className="flex justify-between border-t border-line py-3 text-sm"
-                    key={r.id}
-                    to="/customers"
-                  >
-                    <span>{r.companyName}</span>
-                    <span className="text-ink-2">{r.status}</span>
-                  </Link>
-                ))}
-                {!data.clients.length && <p>{w('Пока нет клиентов', 'No clients yet')}</p>}
-              </PageSection>
-              <PageSection>
-                <h2 className="mb-3 text-lg">{w('Открытые задачи', 'Open tasks')}</h2>
-                {data.tasks
-                  .filter((r) => !['DONE', 'CANCELLED'].includes(r.status))
-                  .slice(0, 5)
-                  .map((r) => (
-                    <Link
-                      className="flex justify-between gap-3 border-t border-line py-3 text-sm"
-                      key={r.id}
-                      to="/tasks"
+            {mode === 'reports' && (
+              <div className="mt-5 flex flex-wrap gap-3">
+                {(['clients', 'projects', 'tasks', 'invoices'] as const)
+                  .filter((k) => userCan(user, `${k}:read`))
+                  .map((k) => (
+                    <Button
+                      key={k}
+                      variant="outline"
+                      disabled={Boolean(data.error) || !reportRows[k].length}
+                      onClick={() => exportCsv(`${k}.csv`, reportRows[k])}
                     >
-                      <span>{r.title}</span>
-                      <span className="text-ink-2">{r.status}</span>
-                    </Link>
+                      {k} · CSV
+                    </Button>
                   ))}
-                {!m.openTasks && <p>{w('Нет открытых задач', 'No open tasks')}</p>}
-              </PageSection>
-            </div>
-          )}
-          {mode === 'reports' && (
-            <div className="mt-5 flex flex-wrap gap-3">
-              {(['clients', 'projects', 'tasks', 'invoices'] as const)
-                .filter((k) => userCan(user, `${k}:read`))
-                .map((k) => (
-                  <Button
-                    key={k}
-                    variant="outline"
-                    disabled={!data[k].length}
-                    onClick={() => exportCsv(`${k}.csv`, data[k])}
-                  >
-                    {k} · CSV
-                  </Button>
-                ))}
-            </div>
-          )}
-        </>
+              </div>
+            )}
+          </>
+        )
       )}
     </PageContent>
   )

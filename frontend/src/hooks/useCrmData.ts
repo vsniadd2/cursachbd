@@ -13,8 +13,11 @@ export function useCrmData() {
     invoices: MetricRecord[]
   }>({ clients: [], projects: [], tasks: [], invoices: [] })
   const [error, setError] = useState(''),
-    [loading, setLoading] = useState(true)
+    [loading, setLoading] = useState(true),
+    [loaded, setLoaded] = useState(false)
   const load = useCallback(async () => {
+    setLoading(true)
+    setError('')
     try {
       const entries = await Promise.all(
         ['clients', 'projects', 'tasks', 'invoices'].map(async (key) => [
@@ -22,8 +25,8 @@ export function useCrmData() {
           userCan(user, `${key}:read`) ? (await apiClient.get(`/${key}`)).data.data.items : [],
         ]),
       )
-      setError('')
       setData(Object.fromEntries(entries) as typeof data)
+      setLoaded(true)
     } catch (e) {
       setError(errorText(e))
     } finally {
@@ -34,5 +37,5 @@ export function useCrmData() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Initial HTTP fetch; updates occur only after the asynchronous response.
     void load()
   }, [load])
-  return { ...data, error, loading, load }
+  return { ...data, error, loading, loaded, load }
 }

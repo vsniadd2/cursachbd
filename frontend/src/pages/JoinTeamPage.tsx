@@ -30,11 +30,11 @@ export function JoinTeamPage() {
   }
   return (
     <AuthPageShell subtitleKey="registerSubtitle" showLangToggle>
-      <div className="mb-6 grid size-14 place-items-center rounded-2xl bg-indigo-50 text-indigo-600">
+      <div className="mb-6 grid size-14 place-items-center rounded-2xl bg-brand-soft text-brand-strong">
         <Users className="size-7" />
       </div>
       <h1 className="text-3xl font-medium tracking-tight">{w('Вместе — больше.', 'Better, together.')}</h1>
-      <p className="mb-7 mt-3 text-sm leading-relaxed text-slate-500">
+      <p className="mb-7 mt-3 text-sm leading-relaxed text-ink-2">
         {w(
           'Аккаунт готов. Попросите администратора команды прислать код или ссылку приглашения и вставьте ниже.',
           'Your account is ready. Ask your team administrator for an invitation code or link and paste it below.',
@@ -61,7 +61,7 @@ export function JoinTeamPage() {
           />
         </label>
         {error && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-sm text-danger">
             {error}
           </p>
         )}
@@ -70,13 +70,13 @@ export function JoinTeamPage() {
           <ArrowRight className="ml-2 size-4" />
         </Button>
       </form>
-      <p className="mt-5 text-xs leading-relaxed text-slate-400">
+      <p className="mt-5 text-xs leading-relaxed text-ink-3">
         {w(
           'Код одноразовый и действует 7 дней. До подключения данные команд недоступны.',
           'Codes are single use and valid for 7 days. Team data stays private until you join.',
         )}
       </p>
-      <button className="mt-6 flex items-center gap-2 text-sm text-slate-500" onClick={() => void logout()}>
+      <button className="mt-6 flex items-center gap-2 text-sm text-ink-2" onClick={() => void logout()}>
         <LogOut className="size-4" />
         {w('Выйти из аккаунта', 'Sign out')}
       </button>

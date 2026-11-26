@@ -15,7 +15,7 @@ export function PricingPage() {
   return (
     <PageContent>
       <PageHeader title={t('pricing.title')} description={t('pricing.description')} />
-      <p className="mb-6 text-sm text-ink-2">
+      <p className="workspace-toolbar mb-6 text-sm text-ink-2">
         {t('pricing.localNotice', {
           defaultValue:
             'Локальная версия: оплата и ограничения тарифов не подключены. Кнопки ведут к форме обратной связи. / Local version: billing is not connected; buttons open feedback.',

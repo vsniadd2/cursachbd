@@ -78,12 +78,33 @@ test('CRM lifecycle, validation, access control, sessions, invitations and autom
       await req(
         'POST',
         '/projects',
-        { clientId: client.id, name: `Deal ${suffix}`, budget: 123.45 },
+        {
+          clientId: client.id,
+          name: `Project ${suffix}`,
+          budget: 123.45,
+          startDate: '2000-01-01',
+          endDate: '2000-02-01',
+        },
         token,
         201,
       )
     ).item
     ids.projects.push(project.id)
+    const projectPath = `/projects/${project.id}`
+    await req('PATCH', projectPath, { startDate: '2000-03-01' }, token, 400)
+    await req('PATCH', projectPath, { budget: 1.234 }, token, 400)
+    await req(
+      'PUT',
+      `${projectPath}/members/${employee.user.id}`,
+      { role: 'OWNER' },
+      employee.accessToken,
+      403,
+    )
+    await req('PUT', `${projectPath}/members/${employee.user.id}`, { role: 'OWNER' }, token, 204)
+    const projectDetail = (await req('GET', projectPath, undefined, token)).item
+    assert.equal(projectDetail.members[0].userId, employee.user.id)
+    assert.equal(projectDetail.startDate.slice(0, 10), '2000-01-01')
+    assert.equal((await req('GET', `/projects/summary?clientId=${client.id}`, undefined, token)).overdue, 1)
     await req('DELETE', `/clients/${client.id}`, undefined, token, 409)
     const rule = (
       await req(
@@ -111,11 +132,61 @@ test('CRM lifecycle, validation, access control, sessions, invitations and autom
     ).item
     ids.tasks.push(task.id)
     assert.equal(task.assignee.id, employee.user.id)
+    const taskPath = `/tasks/${task.id}`
+    const initialInbox = await req('GET', '/notifications', undefined, employee.accessToken)
+    assert.equal(initialInbox.unreadCount, 1)
+    const assignment = initialInbox.items[0]
+    assert.equal(assignment.type, 'TASK_ASSIGNED')
+    assert.equal(assignment.entityId, task.id)
+    assert.equal(assignment.task.project.id, project.id)
+    await req('PATCH', `/notifications/${assignment.id}/read`, {}, token, 404)
+    await req('PATCH', taskPath, { assigneeId: employee.user.id }, token)
     await req('PATCH', `/tasks/${task.id}`, { status: 'DONE' }, employee.accessToken)
+    assert.equal((await req('GET', '/notifications', undefined, employee.accessToken)).unreadCount, 1)
+    const projectPage = await req(
+      'GET',
+      `/projects?clientId=${client.id}&leadId=${employee.user.id}&overdue=true&page=1&limit=1`,
+      undefined,
+      token,
+    )
+    assert.equal(projectPage.total, 1)
+    assert.deepEqual(projectPage.items[0].taskProgress, { done: 1, total: 1 })
+    const history = (await req('GET', `${projectPath}/history`, undefined, token)).items
+    assert.deepEqual(
+      history.map((row: { action: string }) => row.action),
+      ['ASSIGN', 'CREATE'],
+    )
+    const competingDates = await Promise.all(
+      [{ startDate: '2000-01-25' }, { endDate: '2000-01-20' }].map((dates) =>
+        fetch(base + projectPath, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(dates),
+        }),
+      ),
+    )
+    assert.deepEqual(competingDates.map((result) => result.status).sort(), [200, 400])
+    await req('PUT', `${projectPath}/members/${admin.user.id}`, { role: 'OWNER' }, token, 204)
+    const { members } = (await req('GET', projectPath, undefined, token)).item
+    assert.equal(members.length, 2)
+    assert.equal(members[0].userId, admin.user.id)
+    assert.equal(members[1].role, 'MANAGER')
     const notifications = (await req('GET', '/notifications', undefined, token)).items
     const notice = notifications.find((n: { entityId: string }) => n.entityId === task.id)
     assert.ok(notice, 'Automation must create an actual notification')
+    assert.equal(notice.type, 'TASK')
     await req('PATCH', `/notifications/${notice.id}/read`, {}, token)
+    await req('PATCH', taskPath, { assigneeId: null }, token)
+    await Promise.all([
+      req('PATCH', taskPath, { assigneeId: employee.user.id }, token),
+      req('PATCH', taskPath, { assigneeId: employee.user.id }, token),
+    ])
+    assert.equal((await req('GET', '/notifications', undefined, employee.accessToken)).unreadCount, 2)
+    await req('PATCH', `/notifications/${assignment.id}/read`, {}, employee.accessToken)
+    await req('PATCH', `/notifications/${assignment.id}/read`, {}, employee.accessToken)
+    assert.equal((await req('GET', '/notifications', undefined, employee.accessToken)).unreadCount, 1)
+    await req('PATCH', '/notifications/read-all', {}, employee.accessToken)
+    assert.equal((await req('GET', '/notifications', undefined, employee.accessToken)).unreadCount, 0)
     const invoice = (
       await req(
         'POST',
@@ -133,6 +204,14 @@ test('CRM lifecycle, validation, access control, sessions, invitations and autom
       )
     ).item
     ids.invoices.push(invoice.id)
+    assert.equal(
+      (await req('GET', `/invoices?projectId=${project.id}`, undefined, token)).items[0].id,
+      invoice.id,
+    )
+    const otherClient = (await req('POST', '/clients', { companyName: `Alternate ${suffix}` }, token, 201))
+      .item
+    ids.clients.push(otherClient.id)
+    await req('PATCH', projectPath, { clientId: otherClient.id }, token, 409)
     await req(
       'POST',
       '/invoices',
@@ -276,6 +355,7 @@ test('CRM lifecycle, validation, access control, sessions, invitations and autom
     await req('DELETE', `/projects/${project.id}`, undefined, token, 204)
     ids.projects = []
     await req('DELETE', `/clients/${client.id}`, undefined, token, 204)
+    await req('DELETE', `/clients/${otherClient.id}`, undefined, token, 204)
     ids.clients = []
     console.log(`Passed ${count} HTTP checks plus persistence, financial date and concurrency assertions`)
   } finally {

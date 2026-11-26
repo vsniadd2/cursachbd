@@ -2,9 +2,10 @@ import { apiClient } from '@/lib/api/client'
 import type { ApiSuccess } from '@/types/api'
 import type { Client } from '@/types/crm'
 
-export async function fetchClients(status?: string) {
+export async function fetchClients(status?: string, signal?: AbortSignal) {
   const { data } = await apiClient.get<ApiSuccess<{ items: Client[] }>>('/clients', {
     params: status ? { status } : undefined,
+    signal,
   })
   return data.data.items
 }

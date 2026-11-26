@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { ArrowUpRight, ArrowRight, Menu, X, Building2, Users, Check, Plus, ChevronDown } from 'lucide-react'
 import { LocaleLangToggle } from '@/components/LocaleLangToggle'
 import { useWords } from '@/lib/product'
+import './landing-atmosphere.css'
 
 function Sun({ className = '' }: { className?: string }) {
   return (
@@ -173,8 +174,8 @@ function Preview({ mode = 'overview' }: { mode?: 'overview' | 'pipeline' | 'task
                 <svg viewBox="0 0 700 160" preserveAspectRatio="none" aria-hidden="true">
                   <defs>
                     <linearGradient id="fx-chart" x1="0" y1="0" x2="0" y2="1">
-                      <stop stopColor="#9c9de5" stopOpacity=".5" />
-                      <stop offset="1" stopColor="#9c9de5" stopOpacity="0" />
+                      <stop stopColor="var(--color-brand-2)" stopOpacity=".5" />
+                      <stop offset="1" stopColor="var(--color-brand-2)" stopOpacity="0" />
                     </linearGradient>
                   </defs>
                   <path
@@ -186,7 +187,7 @@ function Preview({ mode = 'overview' }: { mode?: 'overview' | 'pipeline' | 'task
                     d="M0 150 C60 145 65 105 115 110 S180 140 230 82 S300 125 355 70 S440 95 490 47 S570 75 620 27 S680 35 700 5"
                     className="fx-chart-line"
                     pathLength={1}
-                    stroke="#6762bd"
+                    stroke="var(--color-brand)"
                     strokeWidth="3"
                     fill="none"
                   />
@@ -328,6 +329,7 @@ export function LandingPage() {
         </div>
         <div className="fx-start-grid">
           <article>
+            <div className="fx-atmosphere" aria-hidden="true" />
             <Building2 size={30} strokeWidth={1.4} />
             <h3>{w('Для вашего бизнеса', 'For your business')}</h3>
             <p>
@@ -342,6 +344,7 @@ export function LandingPage() {
             </Link>
           </article>
           <article>
+            <div className="fx-atmosphere" aria-hidden="true" />
             <Users size={30} strokeWidth={1.4} />
             <h3>{w('Для вас и команды', 'For you and your team')}</h3>
             <p>
@@ -373,6 +376,7 @@ export function LandingPage() {
           </p>
         </div>
         <div className="fx-product-stage">
+          <div className="fx-atmosphere" aria-hidden="true" />
           <Preview />
           <span className="fx-stage-caption">
             {w(
@@ -418,6 +422,7 @@ export function LandingPage() {
         ].map((f, i) => (
           <article className={`fx-feature ${i % 2 ? 'fx-feature-reverse' : ''}`} key={f.mode}>
             <div className={`fx-feature-art fx-art-${f.mode}`}>
+              <div className="fx-atmosphere" aria-hidden="true" />
               <Preview mode={f.mode} />
             </div>
             <div className="fx-feature-copy">

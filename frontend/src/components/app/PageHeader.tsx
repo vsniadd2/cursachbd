@@ -14,8 +14,8 @@ export function PageHeader({
     <div className="mb-5 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
       {title ? (
         <div className="min-w-0">
-          <h2 className="text-[15px] font-medium tracking-[-0.005em]">{title}</h2>
-          {description && <p className="mt-0.5 text-[12px] text-ink-2">{description}</p>}
+          <h2 className="text-lg font-semibold tracking-tight sm:text-xl">{title}</h2>
+          {description && <p className="mt-1 max-w-prose text-sm leading-relaxed text-ink-2">{description}</p>}
         </div>
       ) : (
         <div />

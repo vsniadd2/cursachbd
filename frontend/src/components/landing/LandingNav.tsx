@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { BrandLogo } from '@/components/BrandLogo'
+import { LocaleLangToggle } from '@/components/LocaleLangToggle'
 
 /** Диапазон скролла (px), за который шапка переходит из крупной в компактную */
 const SCROLL_RANGE = 140
@@ -29,8 +30,7 @@ export function LandingNav() {
   }, [])
 
   const headerStyle = { '--nav-p': progress } as CSSProperties
-  const linkClass =
-    'landing-nav-link text-ink-2 font-medium hover:text-ink'
+  const linkClass = 'landing-nav-link text-ink-2 font-medium hover:text-ink'
 
   return (
     <header className="landing-nav-header sticky top-0 z-30" style={headerStyle}>
@@ -48,7 +48,37 @@ export function LandingNav() {
           <a href="#features" className={linkClass}>
             {t('keitaro.nav.features')}
           </a>
+          <a href="#blog" className={linkClass}>
+            {t('keitaro.footer.resourcesNav')}
+          </a>
         </nav>
+        <div className="lp-nav-actions">
+          <span className="lp-nav-locale">
+            <LocaleLangToggle />
+          </span>
+          <Link to="/login" className="lp-login">
+            {t('nav.signIn')}
+          </Link>
+          <Link to="/register" className="landing-btn-primary">
+            {t('nav.register')}
+          </Link>
+        </div>
+        <details className="lp-mobile-menu">
+          <summary aria-label={t('keitaro.menu')}>☰</summary>
+          <nav
+            aria-label={t('keitaro.menu')}
+            onClick={(event) => {
+              const details = event.currentTarget.closest('details')
+              if (details) details.open = false
+            }}
+          >
+            <a href="#product">{t('keitaro.nav.product')}</a>
+            <a href="#features">{t('keitaro.nav.features')}</a>
+            <Link to="/pricing">{t('keitaro.nav.pricing')}</Link>
+            <a href="#blog">{t('keitaro.footer.resourcesNav')}</a>
+            <Link to="/login">{t('nav.signIn')}</Link>
+          </nav>
+        </details>
       </div>
     </header>
   )
