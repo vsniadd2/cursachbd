@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import type { PlanId } from '@/lib/billing/plan'
@@ -50,9 +51,33 @@ export function PricingTicketCard({ planId, isCurrent, highlighted }: PricingTic
               <div className="pricing-ticket-logo">
                 <span className="pricing-ticket-logo-mark" aria-hidden>
                   <svg viewBox="0 0 30 30" fill="none">
-                    <line x1="15" y1="13" x2="15" y2="5" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                    <line x1="11" y1="17" x2="3" y2="17" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                    <line x1="19" y1="17" x2="27" y2="17" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                    <line
+                      x1="15"
+                      y1="13"
+                      x2="15"
+                      y2="5"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <line
+                      x1="11"
+                      y1="17"
+                      x2="3"
+                      y2="17"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                    <line
+                      x1="19"
+                      y1="17"
+                      x2="27"
+                      y2="17"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </span>
                 Flexora
@@ -60,9 +85,7 @@ export function PricingTicketCard({ planId, isCurrent, highlighted }: PricingTic
               <span className="pricing-ticket-type">{PLAN_TAG[planId]}</span>
             </div>
             <h2 className="pricing-ticket-title">{t(`${prefix}.name`)}</h2>
-            <p className="pricing-ticket-subtitle">
-              {period.length > 0 ? period : t('pricing.description')}
-            </p>
+            <p className="pricing-ticket-subtitle">{period.length > 0 ? period : t('pricing.description')}</p>
             <div className="pricing-ticket-details">
               {detailRows.map((line, i) => (
                 <div key={line} className="pricing-ticket-detail">
@@ -86,17 +109,19 @@ export function PricingTicketCard({ planId, isCurrent, highlighted }: PricingTic
                 <span className="pricing-ticket-barcode-id">{BARCODE[planId]}</span>
               </div>
               <div className="pricing-ticket-price-block">
-                <div className="pricing-ticket-price-label">{t('pricing.ticketRate', { defaultValue: 'Rate' })}</div>
+                <div className="pricing-ticket-price-label">
+                  {t('pricing.ticketRate', { defaultValue: 'Rate' })}
+                </div>
                 <div className="pricing-ticket-price">{t(`${prefix}.price`)}</div>
               </div>
             </div>
             <Button
-              type="button"
+              asChild
               variant={isCurrent ? 'outline' : planId === 'advanced' ? 'outline' : 'brand'}
-              disabled={isCurrent || planId === 'advanced'}
+
               className="pricing-ticket-cta h-[37px] w-full rounded-[9px]"
             >
-              {ctaLabel}
+              <Link to="/feedback">{ctaLabel}</Link>
             </Button>
           </div>
         </div>

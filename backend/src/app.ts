@@ -28,6 +28,9 @@ export function createApp() {
 
   app.use('/api/v1', v1Router)
 
+  app.use((_req, res) => {
+    res.status(404).json({ success: false, error: 'Route not found' })
+  })
   app.use(errorHandler)
 
   return app

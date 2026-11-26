@@ -2,9 +2,15 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/contexts/AuthContext'
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+export function ProtectedRoute({
+  children,
+  allowNoTeam = false,
+}: {
+  children: React.ReactNode
+  allowNoTeam?: boolean
+}) {
   const { t } = useTranslation('common')
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, user } = useAuth()
   const location = useLocation()
 
   if (isLoading) {
@@ -18,6 +24,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
+
+  if (!allowNoTeam && user?.teamId === null) return <Navigate to="/join-team" replace />
 
   return children
 }

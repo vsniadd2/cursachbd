@@ -18,6 +18,7 @@ export function TeamInviteLinkDialog({ open, onClose, roles, departments }: Prop
   const [roleId, setRoleId] = useState('')
   const [departmentId, setDepartmentId] = useState('')
   const [busy, setBusy] = useState(false)
+  const [code, setCode] = useState('')
   const [link, setLink] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -34,6 +35,7 @@ export function TeamInviteLinkDialog({ open, onClose, roles, departments }: Prop
         roleId: roleId || undefined,
         departmentId: departmentId || null,
       })
+      setCode(res.inviteCode ?? '')
       if (res.inviteToken) {
         setLink(`${window.location.origin}/register?invite=${encodeURIComponent(res.inviteToken)}`)
       }
@@ -44,22 +46,35 @@ export function TeamInviteLinkDialog({ open, onClose, roles, departments }: Prop
     }
   }
 
-  function copy() {
+  async function copy() {
     if (!link) return
-    void navigator.clipboard.writeText(link)
-    setCopied(true)
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+    } catch {
+      setError('Не удалось скопировать. Выделите ссылку вручную. / Select and copy the link manually.')
+    }
     setTimeout(() => setCopied(false), 2000)
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-ink/30 p-4 sm:items-center" role="dialog" aria-modal>
+    <div
+      className="fixed inset-0 z-40 flex items-end justify-center bg-ink/30 p-4 sm:items-center"
+      role="dialog"
+      aria-modal
+    >
       <div className="w-full max-w-md rounded-[14px] border border-line bg-surface p-5 shadow-[0_24px_80px_rgba(23,23,26,0.12)]">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-[15px] font-medium">{t('team.invite.linkTitle')}</h3>
             <p className="mt-0.5 text-[12px] text-ink-2">{t('team.invite.linkSubtitle')}</p>
           </div>
-          <button type="button" className="rounded-[8px] border border-line p-1.5" onClick={onClose} aria-label={t('team.invite.close')}>
+          <button
+            type="button"
+            className="rounded-[8px] border border-line p-1.5"
+            onClick={onClose}
+            aria-label={t('team.invite.close')}
+          >
             <X className="size-4" />
           </button>
         </div>
@@ -100,8 +115,20 @@ export function TeamInviteLinkDialog({ open, onClose, roles, departments }: Prop
         {link && (
           <div className="mt-4 rounded-[10px] border border-line bg-shell p-3">
             <p className="text-[11px] text-ink-2">{t('team.invite.linkReady')}</p>
+            {code && (
+              <div className="my-3 rounded-lg bg-surface p-3">
+                <p className="text-xs text-ink-2">Код приглашения / Invite code · 7 дней / days</p>
+                <p className="mt-1 select-all font-mono text-xl tracking-widest">{code}</p>
+                <p className="text-xs text-ink-2">Одноразовый / Single use</p>
+              </div>
+            )}
             <p className="mt-1 break-all font-mono text-[11px] text-ink">{link}</p>
-            <Button type="button" variant="brand" className="mt-3 h-[36px] w-full rounded-[10px] text-[12px]" onClick={copy}>
+            <Button
+              type="button"
+              variant="brand"
+              className="mt-3 h-[36px] w-full rounded-[10px] text-[12px]"
+              onClick={copy}
+            >
               {copied ? t('settings.copied') : t('team.invite.copyLink')}
             </Button>
           </div>
@@ -110,10 +137,21 @@ export function TeamInviteLinkDialog({ open, onClose, roles, departments }: Prop
         {error && <p className="mt-3 text-[12px] text-brand">{error}</p>}
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <Button type="button" variant="outline" className="h-[38px] flex-1 rounded-[10px]" onClick={onClose}>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-[38px] flex-1 rounded-[10px]"
+            onClick={onClose}
+          >
             {t('team.invite.close')}
           </Button>
-          <Button type="button" variant="brand" className="h-[38px] flex-1 rounded-[10px]" disabled={busy} onClick={() => void onCreate()}>
+          <Button
+            type="button"
+            variant="brand"
+            className="h-[38px] flex-1 rounded-[10px]"
+            disabled={busy}
+            onClick={() => void onCreate()}
+          >
             {busy ? t('team.invite.creating') : t('team.invite.createLink')}
           </Button>
         </div>

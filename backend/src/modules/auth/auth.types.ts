@@ -14,6 +14,7 @@ export type AuthTokens = {
 }
 
 export type SafeUser = {
+  teamId: string | null
   id: string
   email: string
   firstName: string

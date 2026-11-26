@@ -1,3 +1,4 @@
+import { errorText } from '@/lib/product'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DataTable } from '@/components/app/DataTable'
@@ -18,32 +19,58 @@ type Props = {
 }
 
 export function TeamMemberList({ users, roles, departments, loading, onReload }: Props) {
+  const [error, setError] = useState('')
   const { t } = useTranslation('pages')
   const { user: authUser } = useAuth()
   const canWrite = userCan(authUser, 'users:write', '*')
   const [query, setQuery] = useState('')
 
   async function runSearch() {
-    await onReload(query.trim())
+    try {
+      setError('')
+      await onReload(query.trim())
+    } catch (e) {
+      setError(errorText(e))
+    }
   }
 
   async function onRoleChange(userId: string, roleId: string) {
-    await patchUser(userId, { roleId })
-    await onReload(query.trim())
+    try {
+      setError('')
+      await patchUser(userId, { roleId })
+      await onReload(query.trim())
+    } catch (e) {
+      setError(errorText(e))
+    }
   }
 
   async function onDeptChange(userId: string, departmentId: string) {
-    await patchUser(userId, { departmentId: departmentId === '' ? null : departmentId })
-    await onReload(query.trim())
+    try {
+      setError('')
+      await patchUser(userId, { departmentId: departmentId === '' ? null : departmentId })
+      await onReload(query.trim())
+    } catch (e) {
+      setError(errorText(e))
+    }
   }
 
   async function onManagerChange(userId: string, managerId: string) {
-    await patchUser(userId, { managerId: managerId === '' ? null : managerId })
-    await onReload(query.trim())
+    try {
+      setError('')
+      await patchUser(userId, { managerId: managerId === '' ? null : managerId })
+      await onReload(query.trim())
+    } catch (e) {
+      setError(errorText(e))
+    }
   }
 
   return (
     <div className="mt-6 space-y-3">
+      {error && (
+        <p role="alert" className="text-red-700">
+          {error}
+        </p>
+      )}
       <h3 className="text-[13px] font-medium text-ink">{t('team.membersListTitle')}</h3>
       <div className="flex gap-2">
         <Input
@@ -55,7 +82,13 @@ export function TeamMemberList({ users, roles, departments, loading, onReload }:
           }}
           className="max-w-md"
         />
-        <Button type="button" variant="outline" className="shrink-0 px-3" onClick={() => void runSearch()} aria-label={t('team.searchAction')}>
+        <Button
+          type="button"
+          variant="outline"
+          className="shrink-0 px-3"
+          onClick={() => void runSearch()}
+          aria-label={t('team.searchAction')}
+        >
           <Search className="size-4" />
         </Button>
       </div>
@@ -93,8 +126,10 @@ export function TeamMemberList({ users, roles, departments, loading, onReload }:
                       </option>
                     ))}
                 </select>
+              ) : r.manager ? (
+                `${r.manager.firstName} ${r.manager.lastName}`
               ) : (
-                (r.manager ? `${r.manager.firstName} ${r.manager.lastName}` : t('team.noManager'))
+                t('team.noManager')
               ),
           },
           {

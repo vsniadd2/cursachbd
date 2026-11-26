@@ -28,12 +28,12 @@ export function AppLayout() {
   }, [drawerOpen])
 
   return (
-    <div className="flex h-full min-h-screen w-full overflow-hidden bg-surface font-sans text-ink">
+    <div className="app-workspace flex h-full min-h-screen w-full overflow-hidden bg-canvas font-sans text-ink">
       <Sidebar compact={compact} onToggleCompact={toggleSidebarCompact} />
       <MobileNavDrawer open={drawerOpen} onClose={closeMobileNav} />
       <div className="flex min-w-0 flex-1 flex-col">
         <AppTopBar onOpenMenu={openMobileNav} />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-surface">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-transparent">
           <Outlet />
         </main>
       </div>

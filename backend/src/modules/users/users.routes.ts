@@ -1,3 +1,4 @@
+import { validateId } from '../../middleware/validate-id.js'
 import { Router } from 'express'
 import { z } from 'zod'
 import { authenticate } from '../../middleware/authenticate.js'
@@ -55,7 +56,8 @@ const patchSchema = z.object({
 const list: RequestHandler = async (req, res, next) => {
   try {
     const query = typeof req.query.query === 'string' ? req.query.query.trim() : ''
-    const kind = req.query.kind === 'publicCode' ? 'publicCode' : req.query.kind === 'email' ? 'email' : undefined
+    const kind =
+      req.query.kind === 'publicCode' ? 'publicCode' : req.query.kind === 'email' ? 'email' : undefined
 
     const where: { isActive: boolean; OR?: object[]; email?: object; publicCode?: string } = {
       isActive: true,
@@ -100,6 +102,15 @@ const patch: RequestHandler = async (req, res, next) => {
       throw new ApiError(400, 'Cannot deactivate yourself')
     }
 
+    const target = await prisma.user.findUnique({ where: { id: userId }, include: { role: true } })
+    if (!target) throw new ApiError(404, 'User not found')
+    if (
+      target.role.name === 'ADMIN' &&
+      (body.isActive === false || (body.roleId && body.roleId !== target.roleId))
+    ) {
+      if ((await prisma.user.count({ where: { isActive: true, role: { name: 'ADMIN' } } })) <= 1)
+        throw new ApiError(400, 'Cannot remove the last active administrator')
+    }
     if (body.roleId) {
       const role = await prisma.role.findUnique({ where: { id: body.roleId } })
       if (!role) throw new ApiError(404, 'Role not found')
@@ -125,7 +136,7 @@ const patch: RequestHandler = async (req, res, next) => {
           }
           if (seen.has(cursorId)) break
           seen.add(cursorId)
-          const cursor = await prisma.user.findUnique({
+          const cursor: { managerId: string | null } | null = await prisma.user.findUnique({
             where: { id: cursorId },
             select: { managerId: true },
           })
@@ -152,6 +163,7 @@ const patch: RequestHandler = async (req, res, next) => {
 }
 
 export const usersRouter = Router()
+usersRouter.param('userId', validateId)
 usersRouter.use(authenticate)
 usersRouter.get('/', authorize('users:read', '*'), list)
 usersRouter.patch('/:userId', authorize('users:write', '*'), validate({ body: patchSchema }), patch)

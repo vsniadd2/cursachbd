@@ -43,5 +43,10 @@ export async function updateClient(id: string, data: z.infer<typeof updateClient
 
 export async function deleteClient(id: string) {
   await getClient(id)
+  if (
+    (await prisma.project.count({ where: { clientId: id } })) ||
+    (await prisma.invoice.count({ where: { clientId: id } }))
+  )
+    throw new ApiError(409, 'Remove linked projects and invoices first')
   await prisma.client.delete({ where: { id } })
 }

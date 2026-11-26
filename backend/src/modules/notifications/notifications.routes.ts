@@ -1,3 +1,4 @@
+import { validateId } from '../../middleware/validate-id.js'
 import { Router } from 'express'
 import { authenticate } from '../../middleware/authenticate.js'
 import { prisma } from '../../lib/prisma.js'
@@ -23,10 +24,11 @@ const markRead: RequestHandler = async (req, res, next) => {
     if (!req.user?.sub) throw new ApiError(401, 'Unauthorized')
     const id = typeof req.params.id === 'string' ? req.params.id : req.params.id?.[0]
     if (!id) throw new ApiError(400, 'Invalid id')
-    await prisma.notification.updateMany({
+    const result = await prisma.notification.updateMany({
       where: { id, userId: req.user.sub },
       data: { readAt: new Date() },
     })
+    if (!result.count) throw new ApiError(404, 'Notification not found')
     res.json({ success: true })
   } catch (e) {
     next(e)
@@ -34,6 +36,7 @@ const markRead: RequestHandler = async (req, res, next) => {
 }
 
 export const notificationsRouter = Router()
+notificationsRouter.param('id', validateId)
 notificationsRouter.use(authenticate)
 notificationsRouter.get('/', list)
 notificationsRouter.patch('/:id/read', markRead)

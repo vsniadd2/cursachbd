@@ -1,10 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcrypt'
-import {
-  generateUniquePublicCode,
-  isPatternedPublicCode,
-  isValidPublicCode,
-} from '../src/lib/public-code.ts'
+import { generateUniquePublicCode, isPatternedPublicCode, isValidPublicCode } from '../src/lib/public-code.ts'
 
 const prisma = new PrismaClient()
 
@@ -60,57 +56,61 @@ const ROLES = [
 ] as const
 
 async function main() {
+  await prisma.team.upsert({
+    where: { id: '11111111-1111-4111-8111-111111111111' },
+    create: { id: '11111111-1111-4111-8111-111111111111', name: 'Flexora Demo' },
+    update: {},
+  })
   for (const role of ROLES) {
     await prisma.role.upsert({
-      where: { name: role.name },
+      where: { teamId_name: { teamId: '11111111-1111-4111-8111-111111111111', name: role.name } },
       create: {
         name: role.name,
         description: role.description,
         permissions: role.permissions,
       },
-      update: {
-        description: role.description,
-        permissions: role.permissions,
-      },
+      update: {},
     })
   }
 
-  const adminRole = await prisma.role.findUniqueOrThrow({ where: { name: 'ADMIN' } })
+  const adminRole = await prisma.role.findUniqueOrThrow({
+    where: { teamId_name: { teamId: '11111111-1111-4111-8111-111111111111', name: 'ADMIN' } },
+  })
 
   const passwordHash = await bcrypt.hash('admin123', 12)
 
   const sales = await prisma.department.upsert({
-    where: { name: 'Sales' },
+    where: { teamId_name: { teamId: '11111111-1111-4111-8111-111111111111', name: 'Sales' } },
     create: { name: 'Sales' },
     update: {},
   })
   const inbound = await prisma.department.upsert({
-    where: { name: 'Inbound' },
+    where: { teamId_name: { teamId: '11111111-1111-4111-8111-111111111111', name: 'Inbound' } },
     create: { name: 'Inbound', parentId: sales.id },
     update: { parentId: sales.id },
   })
   await prisma.department.upsert({
-    where: { name: 'Enterprise' },
+    where: { teamId_name: { teamId: '11111111-1111-4111-8111-111111111111', name: 'Enterprise' } },
     create: { name: 'Enterprise', parentId: sales.id },
     update: { parentId: sales.id },
   })
   const engineering = await prisma.department.upsert({
-    where: { name: 'Engineering' },
+    where: { teamId_name: { teamId: '11111111-1111-4111-8111-111111111111', name: 'Engineering' } },
     create: { name: 'Engineering' },
     update: {},
   })
   await prisma.department.upsert({
-    where: { name: 'Support' },
+    where: { teamId_name: { teamId: '11111111-1111-4111-8111-111111111111', name: 'Support' } },
     create: { name: 'Support' },
     update: {},
   })
   const buying = await prisma.department.upsert({
-    where: { name: 'Buying' },
+    where: { teamId_name: { teamId: '11111111-1111-4111-8111-111111111111', name: 'Buying' } },
     create: { name: 'Buying' },
     update: {},
   })
   const hr = await prisma.department.upsert({
-    where: { name: 'HR' },
+    where: { teamId_name: { teamId: '11111111-1111-4111-8111-111111111111', name: 'HR' } },
     create: { name: 'HR' },
     update: {},
   })
@@ -130,7 +130,9 @@ async function main() {
   })
   await ensurePublicCode(admin.id)
 
-  const managerRole = await prisma.role.findUniqueOrThrow({ where: { name: 'MANAGER' } })
+  const managerRole = await prisma.role.findUniqueOrThrow({
+    where: { teamId_name: { teamId: '11111111-1111-4111-8111-111111111111', name: 'MANAGER' } },
+  })
   const maya = await prisma.user.upsert({
     where: { email: 'maya@flexora.local' },
     create: {
@@ -147,7 +149,9 @@ async function main() {
   await ensurePublicCode(maya.id)
   await refreshPatternedPublicCodes()
 
-  const employeeRole = await prisma.role.findUniqueOrThrow({ where: { name: 'EMPLOYEE' } })
+  const employeeRole = await prisma.role.findUniqueOrThrow({
+    where: { teamId_name: { teamId: '11111111-1111-4111-8111-111111111111', name: 'EMPLOYEE' } },
+  })
   const alex = await prisma.user.upsert({
     where: { email: 'alex@flexora.local' },
     create: {
@@ -365,7 +369,9 @@ async function main() {
   })
 
   await prisma.invoice.upsert({
-    where: { invoiceNumber: 'INV-2026-001' },
+    where: {
+      teamId_invoiceNumber: { teamId: '11111111-1111-4111-8111-111111111111', invoiceNumber: 'INV-2026-001' },
+    },
     create: {
       invoiceNumber: 'INV-2026-001',
       clientId: activeClient.id,

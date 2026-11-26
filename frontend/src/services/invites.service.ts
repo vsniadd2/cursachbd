@@ -44,6 +44,7 @@ export async function createInvite(body: CreateInviteBody) {
     ApiSuccess<{
       invite: TeamInviteRow
       inviteToken?: string
+      inviteCode?: string
       credentials?: { email: string; password: string; publicCode: string }
     }>
   >('/invites', body)

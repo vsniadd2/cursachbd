@@ -1,94 +1,50 @@
 # Архитектура Flexora
 
-## Обзор
+## Обновление: отдельные команды
 
-Два отдельных пакета:
+Прежнее описание общей команды ниже относится к предыдущей версии. Теперь BUSINESS создаёт Team и роли ADMIN/EMPLOYEE, PERSONAL остаётся без команды до подключения по приглашению. authenticate задаёт teamId в AsyncLocalStorage; расширение Prisma ограничивает запросы команды и проверяет принадлежность связанных записей. rawPrisma применяется для аутентификации и транзакционного вступления. Номера счетов, названия ролей и отделов и slug прав уникальны внутри команды. Миграция сохраняет прежние данные в Flexora Demo. Присоединение уже состоящего в другой команде пользователя запрещено.
 
-- **frontend/** — React SPA (Vite), прокси `/api` → `localhost:3001`
-- **backend/** — REST API версии v1
-- **Корень** — только `docker-compose.yml` и общий `.env` для Compose
+## Область приложения
 
-```mermaid
-flowchart TB
-  subgraph client [Browser]
-    UI[React UI]
-    Router[React Router]
-    AuthCtx[AuthContext]
-    Axios[Axios client]
-  end
-  subgraph server [Node]
-    Express[Express 5]
-    MW[Middleware chain]
-    Modules[modules/*]
-    Prisma[Prisma Client]
-  end
-  subgraph data [Data]
-    PG[(PostgreSQL)]
-  end
-  UI --> Router
-  Router --> AuthCtx
-  AuthCtx --> Axios
-  Axios -->|HTTP /api/v1| Express
-  Express --> MW
-  MW --> Modules
-  Modules --> Prisma
-  Prisma --> PG
-```
+Одна общая команда в PostgreSQL, разделение прав по ролям и персональным разрешениям. Все зарегистрированные пользователи относятся к этой общей базе. Разделение организаций и новый сценарий регистрации «бизнес / человек» не реализовывались.
 
-## Backend (слои)
+## Пакеты
 
-| Слой | Назначение |
-|------|------------|
-| `routes/v1` | Версионирование API, монтирование модулей |
-| `modules/*` | feature-модули: `health`, `auth` |
-| `*.controller.ts` | HTTP-адаптеры |
-| `*.service.ts` | Бизнес-логика и Prisma |
-| `*.schema.ts` | Zod-валидация |
-| `middleware/` | auth, errors, logging, validate |
-| `config/env.ts` | Типизированные env-переменные |
+- `frontend/`: React 18, React Router, Vite, TypeScript, Tailwind, Recharts, Axios, i18next.
+- `backend/`: Express 5, TypeScript, Prisma, Zod, JWT, bcrypt.
+- `docker-compose.yml`: PostgreSQL 16 и API; frontend запускается локально.
+- `scripts/start.sh`: повторяемый локальный запуск.
 
-### Цепочка запроса
+## Данные и API
 
-1. `helmet`, `cors`, `morgan`, `express.json`
-2. Роут `/api/v1/*`
-3. `validate` (Zod) при необходимости
-4. `authenticate` / `authorize` для защищённых маршрутов
-5. Controller → Service → Prisma
-6. `errorHandler` — единый формат ошибок
+Модели Client → Project → Task и Invoice образуют CRM. Нельзя удалить клиента со сделками/счетами или сделку с задачами/счетами: проверка есть в API и внешних ключах PostgreSQL. Комментарии и вложения описаны в исходной схеме, но отдельный файловый сервис в локальную версию не входит.
 
-## Аутентификация
+User, Role, Department, TeamInvite реализуют команду. RefreshToken хранит SHA-256 хеши одноразовых refresh-токенов. Notification содержит уведомления пользователя; ActivityLog — исходный аудит входов/профиля.
 
-1. **Register / Login** — bcrypt; выдача **access JWT** (короткий, `JWT_ACCESS_EXPIRES_IN`) и **opaque refresh** (хеш в таблице `RefreshToken`).
-2. Payload access: `sub`, `email`, `role`, `permissions`, `type: access`.
-3. **POST /auth/refresh** — ротация refresh и новый access; **POST /auth/logout** — отзыв refresh.
-4. **GET /auth/me** — профиль по Bearer access.
-5. **authorize(...)** — проверка permissions; `*` у ADMIN.
+WorkspaceItem хранит типизированные на уровне API кампании, черновики писем, правила уведомлений и отзывы. Активные правила при создании задачи добавляют уведомления авторам и увеличивают счётчик запусков в той же транзакции. Внешней отправки сообщений нет.
 
-Запись в `ActivityLog` при регистрации, входе (LOGIN).
+API `/api/v1`: `health`, `auth`, `clients`, `projects`, `tasks`, `invoices`, `users`, `roles`, `departments`, `invites`, `permissions`, `notifications`, `workspace`. OpenAPI 3.1 с 32 путями доступен через `/api/docs.json`, UI — `/api/docs`.
 
-## Frontend
+## Доступ и ошибки
 
-| Папка | Назначение |
-|-------|------------|
-| `pages/` | Login, Register, Dashboard |
-| `layouts/` | `DashboardLayout` — оболочка с Sidebar |
-| `components/` | Исходные виджеты dashboard + `ui/*` (shadcn-стиль) |
-| `contexts/AuthContext` | Сессия, token в `localStorage` |
-| `lib/api/client.ts` | Axios + interceptors |
-| `services/` | Вызовы API |
+Для защищённого запроса проверяется подпись access JWT, затем из базы читаются актуальная активность пользователя и его права. CRUD проверяет разрешения соответствующего ресурса. Это защита команды по ролям; задачи сотрудников не изолированы друг от друга на уровне отдельных записей.
 
-Дизайн-система — токены в `frontend/src/index.css` (`@theme`): `brand`, `canvas`, `shell`, `surface`, `line`, `ink*`.
+Вход не подменяется демонстрационной сессией при отказе сервера. Refresh ротация использует условный updateMany: при одновременном предъявлении токена только один запрос успешен. Смена пароля отзывает refresh-сессии; существующие access JWT действуют до окончания срока. Приглашение потребляется транзакционно; проверяются статус, срок и email получателя.
 
-Dashboard (`DashboardPage`) **не перерисовывался**: используются те же компоненты `StatCards`, `RevenueChart`, и т.д.
+Zod проверяет тела/фильтры, UUID параметров проверяются отдельно. Ошибки JSON и Prisma преобразуются в 400/404/409; неизвестный маршрут возвращает JSON 404. API не заменяет эксплуатационное усиление для публичного сервера.
 
-## Что не входит в текущий этап
+## Интерфейс
 
-- CRUD сущностей (clients, projects, tasks)
-- Загрузка файлов в хранилище
-- Refresh tokens
-- Полная навигация Sidebar по маршрутам
+`EntityPage` реализует формы, таблицы, поиск, фильтры, пагинацию, CSV и подтверждение удаления для клиентов, лидов, сделок, задач и счетов. Воронка использует те же сделки и API.
 
-## OpenAPI
+`useCrmData` и `summarize` дают единую модель данных для дашборда, аналитики, отчётов и прогноза. Суммы считаются через целые сотые; валюты не смешиваются. Выручка группируется по paidAt, прогноз — простое среднее трёх календарных месяцев. Бюджеты сделок — USD.
 
-Спецификация: `http://localhost:3001/api/docs`  
-JSON: `http://localhost:3001/api/docs.json`
+`WorkspacePage` управляет кампаниями, письмами, правилами и отзывами. Роли, персональные права, структура команды и приглашения используют существующие специализированные компоненты; `/roles` теперь открывает управление ролями, а не перенаправляет на неподходящую вкладку команды.
+
+Страницы загружаются через React.lazy. Основной JS пакет уменьшен примерно с 923 КБ до 269 КБ без сжатия; графики загружаются отдельным пакетом. Дизайн оболочки, оранжевые акценты и карточки сохранены; статичные KPI заменены реальными данными.
+
+## Проверки и границы
+
+Backend интеграционный тест использует реальную PostgreSQL и отдельный случайный HTTP-порт; генерирует уникальные данные и убирает их в finally. Frontend: unit-тесты финансовых расчётов/CSV, Playwright на Google Chrome, TypeScript, ESLint и сборка. Подробности и границы покрытия — в TEST_REPORT.md.
+
+Нет multi-tenant SaaS, реальных рассылок, OAuth, оплаты, загрузки файлов, резервного копирования и развёртывания. Для использования в интернете потребуются отдельная эксплуатационная подготовка и проверка безопасности.

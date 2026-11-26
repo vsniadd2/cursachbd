@@ -1,3 +1,4 @@
+import { errorText } from '@/lib/product'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DataTable } from '@/components/app/DataTable'
@@ -8,6 +9,7 @@ import type { RoleRow } from '@/types/crm'
 export function RolesCatalogTab() {
   const { t } = useTranslation('pages')
   const { t: tc } = useTranslation('common')
+  const [error, setError] = useState('')
   const [rows, setRows] = useState<RoleRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -18,11 +20,17 @@ export function RolesCatalogTab() {
   useEffect(() => {
     void fetchRoles()
       .then(setRows)
+      .catch((e) => setError(errorText(e)))
       .finally(() => setLoading(false))
   }, [])
 
   return (
     <>
+      {error && (
+        <p role="alert" className="text-red-700">
+          {error}
+        </p>
+      )}
       <PageSection className="mb-5">
         <p className="text-[12px] leading-relaxed text-ink-2">{t('roles.intro')}</p>
       </PageSection>

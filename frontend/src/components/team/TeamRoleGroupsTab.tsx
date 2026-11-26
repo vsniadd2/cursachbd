@@ -1,15 +1,35 @@
+import { errorText, useWords } from '@/lib/product'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createRole, deleteRole, fetchRoles, updateRole } from '@/services/roles.service'
-import { createCustomPermission, deleteCustomPermission, fetchPermissionCatalog } from '@/services/permissions.service'
+import {
+  createCustomPermission,
+  deleteCustomPermission,
+  fetchPermissionCatalog,
+} from '@/services/permissions.service'
 import { userCan } from '@/lib/auth/permissions'
 import { useAuth } from '@/contexts/AuthContext'
 import type { RoleRow } from '@/types/crm'
 
 export function TeamRoleGroupsTab() {
+  const w = useWords()
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [deleting, setDeleting] = useState<{ id: string; kind: 'role' | 'permission' } | null>(null)
+  async function run(action: () => Promise<void>) {
+    setBusy(true)
+    setError('')
+    try {
+      await action()
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setBusy(false)
+    }
+  }
   const { t } = useTranslation('pages')
   const { user } = useAuth()
   const canWrite = userCan(user, 'roles:write', '*')
@@ -35,6 +55,8 @@ export function TeamRoleGroupsTab() {
     ;(async () => {
       try {
         await reload()
+      } catch (e) {
+        setError(errorText(e))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -79,24 +101,67 @@ export function TeamRoleGroupsTab() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <p role="alert" className="text-red-700">
+          {error}
+        </p>
+      )}
+      {deleting && (
+        <div role="alertdialog">
+          <p>{w('Удалить навсегда?', 'Delete permanently?')}</p>
+          <Button
+            disabled={busy}
+            onClick={() =>
+              void run(async () => {
+                if (deleting.kind === 'role') await deleteRole(deleting.id)
+                else await deleteCustomPermission(deleting.id)
+                setDeleting(null)
+                await reload()
+              })
+            }
+          >
+            {w('Удалить навсегда', 'Delete permanently')}
+          </Button>{' '}
+          <Button variant="outline" onClick={() => setDeleting(null)}>
+            {w('Отмена', 'Cancel')}
+          </Button>
+        </div>
+      )}
       {canWrite && (
         <section className="rounded-[14px] border border-line bg-surface p-4">
           <h3 className="text-[14px] font-medium">{t('team.groups.createPerm')}</h3>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
-            <Input placeholder="reports:export" value={newPermSlug} onChange={(e) => setNewPermSlug(e.target.value)} />
-            <Input placeholder={t('team.groups.permLabel')} value={newPermLabel} onChange={(e) => setNewPermLabel(e.target.value)} />
-            <Button type="button" variant="brand" onClick={() => void addCustomPerm()}>
+            <Input
+              placeholder="reports:export"
+              value={newPermSlug}
+              onChange={(e) => setNewPermSlug(e.target.value)}
+            />
+            <Input
+              placeholder={t('team.groups.permLabel')}
+              value={newPermLabel}
+              onChange={(e) => setNewPermLabel(e.target.value)}
+            />
+            <Button disabled={busy} type="button" variant="brand" onClick={() => void run(addCustomPerm)}>
               {t('team.groups.addPerm')}
             </Button>
           </div>
           {customPerms.length > 0 && (
             <ul className="mt-3 space-y-1 text-[12px] text-ink-2">
               {customPerms.map((p) => (
-                <li key={p.id} className="flex items-center justify-between gap-2 rounded-[8px] bg-shell px-2 py-1">
+                <li
+                  key={p.id}
+                  className="flex items-center justify-between gap-2 rounded-[8px] bg-shell px-2 py-1"
+                >
                   <span>
                     {p.label} <span className="font-mono text-[11px]">({p.slug})</span>
                   </span>
-                  <Button type="button" variant="ghost" className="h-7 text-[11px]" onClick={() => void deleteCustomPermission(p.id).then(reload)}>
+                  <Button
+                    disabled={busy}
+                    type="button"
+                    variant="ghost"
+                    className="h-7 text-[11px]"
+                    onClick={() => setDeleting({ id: p.id, kind: 'permission' })}
+                  >
                     {t('team.delete')}
                   </Button>
                 </li>
@@ -110,8 +175,12 @@ export function TeamRoleGroupsTab() {
         <section className="rounded-[14px] border border-line bg-surface p-4">
           <h3 className="text-[14px] font-medium">{t('team.groups.createRole')}</h3>
           <div className="mt-3 flex gap-2">
-            <Input placeholder="CUSTOM_SALES" value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} />
-            <Button type="button" variant="outline" onClick={() => void addRole()}>
+            <Input
+              placeholder="CUSTOM_SALES"
+              value={newRoleName}
+              onChange={(e) => setNewRoleName(e.target.value)}
+            />
+            <Button disabled={busy} type="button" variant="outline" onClick={() => void run(addRole)}>
               {t('team.groups.addRole')}
             </Button>
           </div>
@@ -133,7 +202,10 @@ export function TeamRoleGroupsTab() {
                 <p className="mt-0.5 text-[12px] text-ink-2">{role.description ?? t('team.groups.noDesc')}</p>
                 <ul className="mt-3 flex flex-wrap gap-1.5">
                   {role.permissions.slice(0, 8).map((p) => (
-                    <li key={p} className="rounded-full border border-line bg-shell px-2 py-0.5 text-[10px] text-ink-2">
+                    <li
+                      key={p}
+                      className="rounded-full border border-line bg-shell px-2 py-0.5 text-[10px] text-ink-2"
+                    >
                       {formatPerm(p)}
                     </li>
                   ))}
@@ -155,7 +227,13 @@ export function TeamRoleGroupsTab() {
                       {t('team.groups.edit')}
                     </Button>
                     {!role.isSystem && (
-                      <Button type="button" variant="ghost" className="h-8 text-[12px]" onClick={() => void deleteRole(role.id).then(reload)}>
+                      <Button
+                        disabled={busy}
+                        type="button"
+                        variant="ghost"
+                        className="h-8 text-[12px]"
+                        onClick={() => setDeleting({ id: role.id, kind: 'role' })}
+                      >
                         {t('team.delete')}
                       </Button>
                     )}
@@ -168,7 +246,11 @@ export function TeamRoleGroupsTab() {
       </div>
 
       {editing && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-ink/30 p-4" role="dialog" aria-modal>
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-ink/30 p-4"
+          role="dialog"
+          aria-modal
+        >
           <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-[14px] border border-line bg-surface p-5">
             <h3 className="text-[15px] font-medium">{t('team.groups.editTitle', { name: editing.name })}</h3>
             <div className="mt-3 max-h-64 space-y-1.5 overflow-y-auto">
@@ -186,10 +268,10 @@ export function TeamRoleGroupsTab() {
               ))}
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setEditing(null)}>
+              <Button disabled={busy} type="button" variant="ghost" onClick={() => setEditing(null)}>
                 {t('team.cancel')}
               </Button>
-              <Button type="button" variant="brand" onClick={() => void saveRole()}>
+              <Button disabled={busy} type="button" variant="brand" onClick={() => void run(saveRole)}>
                 {t('team.save')}
               </Button>
             </div>

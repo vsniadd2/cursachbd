@@ -1,43 +1,51 @@
 import { useEffect, useState } from 'react'
-import { fetchTasks } from '@/services/tasks.service'
-import { fetchUsers } from '@/services/users.service'
-import { fetchRoles } from '@/services/roles.service'
-
-export type NavBadges = {
-  tasks?: number
-  email?: number
-  team?: number
-  roles?: number
-}
-
+import { apiClient } from '@/lib/api/client'
+import { useAuth } from '@/contexts/AuthContext'
+import { userCan } from '@/lib/auth/permissions'
+export type NavBadges = { tasks?: number; email?: number; team?: number; roles?: number }
 export function useNavBadges(): NavBadges {
-  const [badges, setBadges] = useState<NavBadges>({ email: 65 })
-
+  const { user } = useAuth(),
+    [badges, setBadges] = useState<NavBadges>({})
   useEffect(() => {
     let active = true
-    ;(async () => {
+    async function load() {
+      const requests = [
+        ['tasks', 'tasks'],
+        ['team', 'users'],
+        ['roles', 'roles'],
+      ] as const
+      const entries = await Promise.all(
+        requests.map(async ([key, resource]) => {
+          if (!userCan(user, `${resource}:read`)) return [key, undefined]
+          try {
+            const items = (await apiClient.get(`/${resource}`)).data.data.items
+            return [
+              key,
+              resource === 'tasks'
+                ? items.filter((t: { status: string }) => !['DONE', 'CANCELLED'].includes(t.status)).length
+                : items.length,
+            ]
+          } catch {
+            return [key, undefined]
+          }
+        }),
+      )
       try {
-        const [tasks, users, roles] = await Promise.all([
-          fetchTasks({ status: 'TODO' }).catch(() => []),
-          fetchUsers().catch(() => []),
-          fetchRoles().catch(() => []),
+        entries.push([
+          'email',
+          (await apiClient.get('/workspace', { params: { kind: 'EMAIL' } })).data.data.items.length,
         ])
-        if (!active) return
-        const openTasks = tasks.filter((t) => t.status !== 'DONE' && t.status !== 'CANCELLED').length
-        setBadges({
-          tasks: openTasks || 20,
-          email: 65,
-          team: users.length || 12,
-          roles: roles.length || 4,
-        })
       } catch {
-        setBadges({ tasks: 20, email: 65, team: 12, roles: 4 })
+        /* optional badge */
       }
-    })()
+      if (active) setBadges(Object.fromEntries(entries))
+    }
+    void load()
+    window.addEventListener('crm:changed', load)
     return () => {
       active = false
+      window.removeEventListener('crm:changed', load)
     }
-  }, [])
-
+  }, [user])
   return badges
 }

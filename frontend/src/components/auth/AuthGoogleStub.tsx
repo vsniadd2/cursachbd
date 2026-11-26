@@ -33,13 +33,11 @@ export function AuthGoogleStub({ variant = 'signIn' }: { variant?: 'signIn' | 'c
       type="button"
       variant="outline"
       className="h-[42px] w-full gap-2 rounded-[12px] border-line bg-surface text-[13px] font-medium text-ink shadow-none hover:bg-shell"
-      onClick={() => {
-        /* OAuth stub */
-      }}
+      disabled
       title={t('googleStubTitle')}
     >
       <GoogleMark />
-      {label}
+      {label} · OAuth
     </Button>
   )
 }

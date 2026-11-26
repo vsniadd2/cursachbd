@@ -1,29 +1,47 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 const SLICE_KEYS = ['website', 'email', 'automation'] as const
 
 const SLICE_META = [
-  { value: 23, fill: '#ffcdb5', text: '#3b2a22', dot: '#ff6b2c' },
-  { value: 32, fill: '#ff9a6b', text: '#ffffff', dot: '#ff9a6b' },
-  { value: 45, fill: '#ff6b2c', text: '#ffffff', dot: '#ffcdb5' },
+  { value: 23, fill: 'var(--color-brand-3)', text: 'var(--color-ink)', dot: 'var(--color-brand)' },
+  { value: 32, fill: 'var(--color-brand-2)', text: '#ffffff', dot: 'var(--color-brand-2)' },
+  { value: 45, fill: 'var(--color-brand)', text: '#ffffff', dot: 'var(--color-brand-3)' },
 ] as const
 
-const SLICE_ARCS = SLICE_META.reduce<{ from: number; to: number }[]>((acc, s) => {
+const DEFAULT_ARCS = SLICE_META.reduce<{ from: number; to: number }[]>((acc, s) => {
   const from = acc.length ? acc[acc.length - 1].to : -97
   acc.push({ from, to: from + s.value * 3.6 })
   return acc
 }, [])
 
-export function Touchpoints() {
+export function Touchpoints({
+  segments,
+  title,
+}: {
+  segments?: { label: string; value: number }[]
+  title?: string
+}) {
   const { t } = useTranslation('components')
   const [hover, setHover] = useState<number | null>(null)
-  const slices = SLICE_KEYS.map((k, i) => ({ ...SLICE_META[i], label: t(`touchpoints.${k}`) }))
+  const total = segments?.reduce((sum, s) => sum + s.value, 0) ?? 100
+  const slices = SLICE_KEYS.map((k, i) => ({
+    ...SLICE_META[i],
+    label: segments?.[i]?.label ?? t(`touchpoints.${k}`),
+    value: segments ? (total ? Math.round((segments[i].value / total) * 100) : 0) : SLICE_META[i].value,
+  }))
+  const arcs = segments
+    ? segments.reduce<{ from: number; to: number }[]>((acc, s) => {
+        const from = acc.length ? acc[acc.length - 1].to : -97
+        acc.push({ from, to: from + (total ? (s.value / total) * 359.999 : 0) })
+        return acc
+      }, [])
+    : DEFAULT_ARCS
 
   return (
     <section className="flex items-stretch justify-between gap-3 rounded-[14px] border border-line bg-surface px-[15px] py-[15px] sm:h-[176px]">
       <div className="flex min-w-0 flex-col justify-between">
-        <h2 className="text-[15px] tracking-[-0.005em]">{t('touchpoints.title')}</h2>
+        <h2 className="text-[15px] tracking-[-0.005em]">{title ?? t('touchpoints.title')}</h2>
         <ul className="mt-4 space-y-[9px] pb-[18px]">
           {slices.map((s, i) => (
             <li
@@ -39,9 +57,15 @@ export function Touchpoints() {
           ))}
         </ul>
       </div>
-      <svg viewBox="-100 -100 200 200" className="size-[120px] shrink-0 self-center">
+      <svg
+        role="img"
+        aria-label={title ?? t('touchpoints.title')}
+        viewBox="-100 -100 200 200"
+        className="size-[120px] shrink-0 self-center"
+      >
+        {!total && <circle r="100" fill="#f2f2f3" />}
         {slices.map((s, i) => {
-          const { from, to } = SLICE_ARCS[i]
+          const { from, to } = arcs[i]
           const large = to - from > 180 ? 1 : 0
           const start = polar(from)
           const end = polar(to)

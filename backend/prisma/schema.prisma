@@ -85,8 +85,10 @@ enum InviteStatus {
 }
 
 model Role {
+  teamId String? @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  @@index([teamId])
   id          String   @id @default(uuid()) @db.Uuid
-  name        String   @unique
+  name        String
   description String?
   permissions Json     @default("[]")
   createdAt   DateTime @default(now())
@@ -94,20 +96,26 @@ model Role {
 
   users        User[]
   teamInvites  TeamInvite[]
+  @@unique([teamId, name])
 }
 
 model CustomPermission {
+  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  @@index([teamId])
   id          String   @id @default(uuid()) @db.Uuid
-  slug        String   @unique
+  slug        String
   label       String
   description String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  @@unique([teamId, slug])
 }
 
 model Department {
+  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  @@index([teamId])
   id        String   @id @default(uuid()) @db.Uuid
-  name      String   @unique
+  name      String
   parentId  String?  @db.Uuid
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -116,9 +124,12 @@ model Department {
   children     Department[] @relation("DepartmentHierarchy")
   users        User[]
   teamInvites  TeamInvite[]
+  @@unique([teamId, name])
 }
 
 model User {
+  teamId String? @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  @@index([teamId])
   id               String   @id @default(uuid()) @db.Uuid
   email            String   @unique
   passwordHash     String
@@ -154,6 +165,9 @@ model User {
 }
 
 model TeamInvite {
+  codeHash String? @unique
+  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  @@index([teamId])
   id                 String       @id @default(uuid()) @db.Uuid
   type               InviteType
   status             InviteStatus @default(PENDING)
@@ -193,6 +207,8 @@ model RefreshToken {
 }
 
 model Client {
+  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  @@index([teamId])
   id           String       @id @default(uuid()) @db.Uuid
   companyName  String
   contactName  String?
@@ -211,6 +227,8 @@ model Client {
 }
 
 model Project {
+  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  @@index([teamId])
   id          String         @id @default(uuid()) @db.Uuid
   clientId    String         @db.Uuid
   name        String
@@ -223,7 +241,7 @@ model Project {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  client   Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client   Client          @relation(fields: [clientId], references: [id], onDelete: Restrict)
   members  ProjectMember[]
   tasks    Task[]
   invoices Invoice[]
@@ -248,6 +266,8 @@ model ProjectMember {
 }
 
 model Task {
+  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  @@index([teamId])
   id          String       @id @default(uuid()) @db.Uuid
   projectId   String       @db.Uuid
   assigneeId  String?      @db.Uuid
@@ -259,7 +279,7 @@ model Task {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Restrict)
   assignee    User?            @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   comments    TaskComment[]
   attachments TaskAttachment[]
@@ -300,24 +320,28 @@ model TaskAttachment {
 }
 
 model Invoice {
+  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  @@index([teamId])
   id            String        @id @default(uuid()) @db.Uuid
-  invoiceNumber String        @unique
+  invoiceNumber String
   clientId      String        @db.Uuid
   projectId     String?       @db.Uuid
   amount        Decimal       @db.Decimal(14, 2)
   currency      String        @default("USD")
   status        InvoiceStatus @default(DRAFT)
+  paidAt        DateTime?
   issuedAt      DateTime?
   dueDate       DateTime?
   notes         String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  client  Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  client  Client   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
 
   @@index([clientId, status])
   @@index([projectId])
+  @@unique([teamId, invoiceNumber])
 }
 
 model Notification {
@@ -351,4 +375,27 @@ model ActivityLog {
   @@index([createdAt])
   @@index([entityType, entityId])
   @@index([userId])
+}
+
+// Shared team workspace; external mail delivery is deliberately not simulated.
+model WorkspaceItem {
+  teamId String @default("11111111-1111-4111-8111-111111111111") @db.Uuid
+  @@index([teamId])
+  id        String   @id @default(uuid()) @db.Uuid
+  kind      String
+  title     String
+  body      String   @default("") @db.Text
+  status    String   @default("DRAFT")
+  ownerId   String   @db.Uuid
+  runs      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kind, status])
+}
+
+model Team {
+ id String @id @default(uuid()) @db.Uuid
+ name String
+ createdAt DateTime @default(now())
 }

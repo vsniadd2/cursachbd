@@ -16,12 +16,29 @@ export async function listTasks(filters: { status?: TaskStatus; projectId?: stri
 }
 
 export async function createTask(data: z.infer<typeof createTaskSchema>) {
-  return prisma.task.create({
-    data,
-    include: {
-      project: { select: { id: true, name: true } },
-      assignee: { select: { id: true, firstName: true, lastName: true } },
-    },
+  return prisma.$transaction(async (tx) => {
+    const item = await tx.task.create({
+      data,
+      include: {
+        project: { select: { id: true, name: true } },
+        assignee: { select: { id: true, firstName: true, lastName: true } },
+      },
+    })
+    const rules = await tx.workspaceItem.findMany({ where: { kind: 'AUTOMATION', status: 'ACTIVE' } })
+    for (const rule of rules) {
+      await tx.notification.create({
+        data: {
+          userId: rule.ownerId,
+          type: 'TASK',
+          title: rule.title,
+          body: item.title,
+          entityType: 'Task',
+          entityId: item.id,
+        },
+      })
+      await tx.workspaceItem.update({ where: { id: rule.id }, data: { runs: { increment: 1 } } })
+    }
+    return item
   })
 }
 

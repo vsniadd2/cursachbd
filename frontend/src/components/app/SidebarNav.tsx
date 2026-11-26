@@ -1,7 +1,7 @@
 import { Link, NavLink, useMatch } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { Rocket, ChevronRight, PanelLeft, PanelLeftClose } from 'lucide-react'
-import { NAVIGATION, SECTION_LABEL_KEYS, type NavItemConfig, type NavSection } from '@/config/navigation'
+import { NAVIGATION, SECTION_LABEL_KEYS, type NavItemConfig } from '@/config/navigation'
 import { useNavBadges } from '@/hooks/useNavBadges'
 import { cn } from '@/lib/utils'
 
@@ -21,7 +21,7 @@ export function SidebarNav({
   const { t } = useTranslation('nav')
   const { t: tc } = useTranslation('common')
   const badges = useNavBadges()
-  const sections: NavSection[] = ['main', 'sales', 'tools', 'team']
+  const sections: (keyof typeof SECTION_LABEL_KEYS)[] = ['main', 'sales', 'tools', 'team']
   const footer = NAVIGATION.filter((n) => n.section === 'footer')
 
   return (
@@ -37,9 +37,7 @@ export function SidebarNav({
           onClick={onNavigate}
           className={cn(
             'rounded-[8px] text-ink outline-none transition-colors duration-150 hover:bg-surface/80 focus-visible:ring-2 focus-visible:ring-brand/40',
-            compact
-              ? 'grid shrink-0 place-items-center p-1'
-              : 'flex min-w-0 flex-1 items-center gap-[8px]',
+            compact ? 'grid shrink-0 place-items-center p-1' : 'flex min-w-0 flex-1 items-center gap-[8px]',
           )}
           aria-label={t('dashboardAria')}
           title={t('toDashboard')}
@@ -177,9 +175,7 @@ function NavItem({
       className={({ isActive }) =>
         cn(
           'relative flex w-full items-center rounded-[9px] border text-left text-[12.5px] transition-colors duration-150',
-          compact
-            ? 'mb-1 h-[37px] justify-center gap-0 border-transparent px-0'
-            : 'gap-[9px] px-[12px]',
+          compact ? 'mb-1 h-[37px] justify-center gap-0 border-transparent px-0' : 'gap-[9px] px-[12px]',
           !compact && isActive && 'mb-[8px] h-[37px] border-line bg-surface text-ink',
           !compact && !isActive && (roomy ? 'h-[28px]' : 'h-[27px]'),
           compact && isActive && 'border-line bg-surface text-ink',
@@ -203,7 +199,9 @@ function NavItem({
       </span>
       {!compact && <span className="flex-1 truncate">{label}</span>}
       {!compact && badge != null && (
-        <span className="rounded-[4px] bg-[#ececee] px-[5px] py-[1px] text-[9.5px] tabular text-ink">{badge}</span>
+        <span className="rounded-[4px] bg-[#ececee] px-[5px] py-[1px] text-[9.5px] tabular text-ink">
+          {badge}
+        </span>
       )}
     </NavLink>
   )

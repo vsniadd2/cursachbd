@@ -25,7 +25,10 @@ export function buildPeopleTree(users: TeamUser[]): PersonNode[] {
   return roots
 }
 
-export type DeptWithMembers = DeptNode & { members: TeamUser[] }
+export type DeptWithMembers = Omit<DeptNode, 'children'> & {
+  members: TeamUser[]
+  children: DeptWithMembers[]
+}
 
 export function buildDeptMemberTree(departments: Department[], users: TeamUser[]): DeptWithMembers[] {
   const roots = buildDeptTree(departments)

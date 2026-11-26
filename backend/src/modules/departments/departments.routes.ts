@@ -1,3 +1,5 @@
+import { validateId } from '../../middleware/validate-id.js'
+import { ApiError } from '../../utils/api-error.js'
 import { Router } from 'express'
 import { z } from 'zod'
 import { authenticate } from '../../middleware/authenticate.js'
@@ -73,6 +75,7 @@ const assignUser: RequestHandler = async (req, res, next) => {
 }
 
 export const departmentsRouter = Router()
+departmentsRouter.param('id', validateId)
 departmentsRouter.use(authenticate)
 departmentsRouter.get('/', authorize('users:read', '*'), list)
 departmentsRouter.post('/', authorize('users:write', '*'), validate({ body: createSchema }), create)
@@ -82,3 +85,40 @@ departmentsRouter.patch(
   validate({ body: assignUserSchema }),
   assignUser,
 )
+
+departmentsRouter.patch(
+  '/:id',
+  authorize('users:write'),
+  validate({ body: createSchema.partial() }),
+  async (req, res) => {
+    const id = req.params.id as string
+    const { name, parentId } = req.body as { name?: string; parentId?: string | null }
+    if (parentId) {
+      let cursor: string | null = parentId
+      const seen = new Set<string>()
+      while (cursor) {
+        if (cursor === id || seen.has(cursor)) throw new ApiError(400, 'Department hierarchy cycle')
+        seen.add(cursor)
+        const row: { parentId: string | null } | null = await prisma.department.findUnique({
+          where: { id: cursor },
+          select: { parentId: true },
+        })
+        if (!row) throw new ApiError(404, 'Parent department not found')
+        cursor = row.parentId
+      }
+    }
+    const item = await prisma.department.update({ where: { id }, data: { name, parentId } })
+    res.json({ success: true, data: item })
+  },
+)
+departmentsRouter.delete('/:id', authorize('users:write'), async (req, res) => {
+  const id = req.params.id as string
+  if (
+    (await prisma.user.count({ where: { departmentId: id } })) ||
+    (await prisma.department.count({ where: { parentId: id } })) ||
+    (await prisma.teamInvite.count({ where: { departmentId: id, status: 'PENDING' } }))
+  )
+    throw new ApiError(409, 'Department has members, children or pending invites')
+  await prisma.department.delete({ where: { id } })
+  res.status(204).send()
+})

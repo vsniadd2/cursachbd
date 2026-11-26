@@ -5,6 +5,7 @@ export type UserRole = {
 }
 
 export type User = {
+  teamId?: string | null
   id: string
   email: string
   firstName: string

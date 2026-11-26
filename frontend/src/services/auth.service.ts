@@ -1,17 +1,13 @@
 import { apiClient } from '@/lib/api/client'
-import {
-  clearDemoSession,
-  demoAuthResponse,
-  enableDemoSession,
-  isDemoMode,
-  matchesDemoCredentials,
-  DEMO_USER,
-} from '@/lib/auth/demoAuth'
+import { clearDemoSession, demoAuthResponse, isDemoMode, DEMO_USER } from '@/lib/auth/demoAuth'
 import { clearTokens, getRefreshToken, setTokens } from '@/lib/api/tokens'
 import type { ApiSuccess } from '@/types/api'
 import type { AuthResponse, User } from '@/types/user'
 
 export type RegisterPayload = {
+  accountType?: 'BUSINESS' | 'PERSONAL'
+  businessName?: string
+  inviteToken?: string
   email: string
   password: string
   firstName: string
@@ -36,17 +32,10 @@ function persistAuth(data: AuthResponse) {
 }
 
 export async function login(payload: LoginPayload): Promise<AuthResponse> {
-  try {
-    const { data } = await apiClient.post<ApiSuccess<AuthResponse>>('/auth/login', payload)
-    clearDemoSession()
-    persistAuth(data.data)
-    return data.data
-  } catch (error) {
-    if (matchesDemoCredentials(payload.email, payload.password)) {
-      return enableDemoSession()
-    }
-    throw error
-  }
+  const { data } = await apiClient.post<ApiSuccess<AuthResponse>>('/auth/login', payload)
+  clearDemoSession()
+  persistAuth(data.data)
+  return data.data
 }
 
 export async function register(payload: RegisterPayload): Promise<AuthResponse> {
@@ -55,13 +44,23 @@ export async function register(payload: RegisterPayload): Promise<AuthResponse> 
   return data.data
 }
 
-export async function refreshSession(): Promise<AuthResponse | null> {
-  if (isDemoMode()) return demoAuthResponse()
-  const refreshToken = getRefreshToken()
-  if (!refreshToken) return null
-  const { data } = await apiClient.post<ApiSuccess<AuthResponse>>('/auth/refresh', { refreshToken })
-  persistAuth(data.data)
-  return data.data
+let pendingRefresh: Promise<AuthResponse | null> | null = null
+
+export function refreshSession(): Promise<AuthResponse | null> {
+  // StrictMode can mount the bootstrap effect twice; share the single-use token request.
+  if (!pendingRefresh) {
+    pendingRefresh = (async () => {
+      if (isDemoMode()) return demoAuthResponse()
+      const refreshToken = getRefreshToken()
+      if (!refreshToken) return null
+      const { data } = await apiClient.post<ApiSuccess<AuthResponse>>('/auth/refresh', { refreshToken })
+      persistAuth(data.data)
+      return data.data
+    })().finally(() => {
+      pendingRefresh = null
+    })
+  }
+  return pendingRefresh
 }
 
 export async function fetchMe(): Promise<User> {

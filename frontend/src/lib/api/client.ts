@@ -11,6 +11,7 @@ import {
 migrateLegacyTokens()
 
 export const apiClient = axios.create({
+  timeout: 15000,
   baseURL: import.meta.env.VITE_API_URL ?? '/api/v1',
   headers: { 'Content-Type': 'application/json' },
 })
@@ -35,7 +36,7 @@ async function refreshAccessToken(): Promise<string | null> {
     const { data } = await axios.post<{
       success: boolean
       data: { accessToken: string; refreshToken: string }
-    }>(`${apiClient.defaults.baseURL}/auth/refresh`, { refreshToken })
+    }>(`${apiClient.defaults.baseURL}/auth/refresh`, { refreshToken }, { timeout: 15000 })
     setTokens(data.data.accessToken, data.data.refreshToken)
     return data.data.accessToken
   } catch {

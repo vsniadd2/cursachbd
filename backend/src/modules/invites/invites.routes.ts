@@ -1,5 +1,7 @@
+import { joinTeam } from '../teams/teams.routes.js'
+import { validateId } from '../../middleware/validate-id.js'
 import { Router } from 'express'
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash, randomUUID, randomBytes } from 'node:crypto'
 import { z } from 'zod'
 import bcrypt from 'bcrypt'
 import { InviteStatus, InviteType } from '@prisma/client'
@@ -103,16 +105,18 @@ const create: RequestHandler = async (req, res, next) => {
     const body = req.body as z.infer<typeof createSchema>
     const createdById = req.user!.sub
     const expiresAt = new Date(Date.now() + INVITE_TTL_MS)
-    const employeeRole = await prisma.role.findUnique({ where: { name: 'EMPLOYEE' } })
+    const employeeRole = await prisma.role.findFirst({ where: { name: 'EMPLOYEE' } })
     const defaultRoleId = employeeRole?.id
 
     if (body.type === 'LINK') {
       const plainToken = randomUUID()
+      const inviteCode = randomBytes(5).toString('hex').toUpperCase()
       const invite = await prisma.teamInvite.create({
         data: {
           type: InviteType.LINK,
           status: InviteStatus.PENDING,
           tokenHash: hashToken(plainToken),
+          codeHash: hashToken(inviteCode),
           roleId: body.roleId ?? defaultRoleId,
           departmentId: body.departmentId ?? null,
           extraPermissions: body.extraPermissions ?? [],
@@ -126,6 +130,7 @@ const create: RequestHandler = async (req, res, next) => {
         data: {
           invite: mapInvite(invite),
           inviteToken: plainToken,
+          inviteCode,
         },
       })
       return
@@ -133,12 +138,14 @@ const create: RequestHandler = async (req, res, next) => {
 
     if (body.type === 'EMAIL') {
       const plainToken = randomUUID()
+      const inviteCode = randomBytes(5).toString('hex').toUpperCase()
       const invite = await prisma.teamInvite.create({
         data: {
           type: InviteType.EMAIL,
           status: InviteStatus.PENDING,
           email: body.email.toLowerCase(),
           tokenHash: hashToken(plainToken),
+          codeHash: hashToken(inviteCode),
           roleId: body.roleId ?? defaultRoleId,
           departmentId: body.departmentId ?? null,
           extraPermissions: body.extraPermissions ?? [],
@@ -152,6 +159,7 @@ const create: RequestHandler = async (req, res, next) => {
         data: {
           invite: mapInvite(invite),
           inviteToken: plainToken,
+          inviteCode,
         },
       })
       return
@@ -265,7 +273,17 @@ const cancel: RequestHandler = async (req, res, next) => {
 }
 
 export const invitesRouter = Router()
+invitesRouter.param('inviteId', validateId)
 invitesRouter.use(authenticate)
 invitesRouter.get('/', authorize('users:read', '*'), list)
 invitesRouter.post('/', authorize('users:write', '*'), validate({ body: createSchema }), create)
 invitesRouter.delete('/:inviteId', authorize('users:write', '*'), cancel)
+
+invitesRouter.post(
+  '/accept',
+  validate({ body: z.object({ token: z.string().uuid() }) }),
+  async (req, res) => {
+    await joinTeam(req.user!.sub, req.body.token)
+    res.json({ success: true })
+  },
+)

@@ -1,3 +1,4 @@
+import { useWords } from '@/lib/product'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -11,12 +12,15 @@ import { useAuth } from '@/contexts/AuthContext'
 import { DEMO_EMAIL, DEMO_PASSWORD } from '@/lib/auth/demoAuth'
 
 export function LoginPage() {
+  const w = useWords()
   const { t } = useTranslation('auth')
   const { t: tc } = useTranslation('common')
   const { login, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/dashboard'
+  const from = new URLSearchParams(location.search).has('invite')
+    ? `/register${location.search}`
+    : ((location.state as { from?: { pathname: string } })?.from?.pathname ?? '/dashboard')
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -63,6 +67,20 @@ export function LoginPage() {
       }
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-5">
+        <div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-[.18em] text-indigo-500">
+            {w('Рады видеть вас снова', 'Welcome back')}
+          </p>
+          <h1 className="text-3xl font-medium tracking-tight">
+            {w('С возвращением.', 'Make yourself at home.')}
+          </h1>
+          <p className="mt-2 text-sm text-slate-500">
+            {w(
+              'Ваша команда и всё важное — уже здесь.',
+              'Your team and everything that matters, right here.',
+            )}
+          </p>
+        </div>
         <div className="flex flex-col gap-2">
           <AuthFieldLabel htmlFor="email">{t('login')}</AuthFieldLabel>
           <Input

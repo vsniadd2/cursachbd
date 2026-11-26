@@ -1,3 +1,4 @@
+import { errorText } from '@/lib/product'
 import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -32,6 +33,7 @@ export function TeamPage() {
   const raw = params.get('tab')
   const tab: TeamTab = isTeamTab(raw) ? raw : 'people'
 
+  const [error, setError] = useState('')
   const [users, setUsers] = useState<TeamUser[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [roles, setRoles] = useState<RoleRow[]>([])
@@ -55,6 +57,8 @@ export function TeamPage() {
     ;(async () => {
       try {
         await reload('')
+      } catch (e) {
+        setError(errorText(e))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -70,6 +74,11 @@ export function TeamPage() {
 
   return (
     <PageContent>
+      {error && (
+        <p role="alert" className="text-red-700">
+          {error}
+        </p>
+      )}
       <PageHeader
         title={t('team.title')}
         description={t('team.description')}
@@ -106,7 +115,12 @@ export function TeamPage() {
 
       {tab === 'people' && (
         <div className="mb-4 flex items-center justify-between gap-3">
-          <Button type="button" variant="outline" className="h-9 gap-2 rounded-[10px] text-[12px] text-ink-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowRoster(true)}
+            className="h-9 gap-2 rounded-[10px] text-[12px] text-ink-2"
+          >
             <Filter className="size-3.5" />
             {t('team.org.addFilter')}
           </Button>
@@ -122,11 +136,19 @@ export function TeamPage() {
             onShowRosterChange={setShowRoster}
           />
           {showRoster && (
-            <TeamMemberList users={users} roles={roles} departments={departments} loading={loading} onReload={reload} />
+            <TeamMemberList
+              users={users}
+              roles={roles}
+              departments={departments}
+              loading={loading}
+              onReload={reload}
+            />
           )}
         </>
       )}
-      {tab === 'departments' && <TeamDepartmentOrgChart departments={departments} users={users} loading={loading} />}
+      {tab === 'departments' && (
+        <TeamDepartmentOrgChart departments={departments} users={users} loading={loading} />
+      )}
 
       <TeamInviteLinkDialog
         open={inviteOpen}

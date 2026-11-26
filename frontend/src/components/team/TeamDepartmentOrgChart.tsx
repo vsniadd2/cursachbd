@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Department, TeamUser } from '@/types/crm'
 import { TeamOrgChartCanvas } from '@/components/team/TeamOrgChartCanvas'
@@ -8,6 +8,7 @@ import { buildDeptMemberTree, type DeptWithMembers } from '@/components/team/tea
 function DeptSubtree({ node }: { node: DeptWithMembers }) {
   const { t } = useTranslation('pages')
 
+  const [selected, setSelected] = useState<TeamUser | null>(null)
   return (
     <li className="team-org-dept-node flex flex-col items-center gap-3">
       <div className="rounded-[10px] border border-dashed border-line bg-shell/80 px-4 py-2 text-center">
@@ -18,10 +19,15 @@ function DeptSubtree({ node }: { node: DeptWithMembers }) {
         <ul className="m-0 flex list-none flex-wrap justify-center gap-4 p-0">
           {node.members.map((u) => (
             <li key={u.id}>
-              <TeamOrgPersonCard user={u} />
+              <TeamOrgPersonCard user={u} selected={selected?.id === u.id} onSelect={() => setSelected(u)} />
             </li>
           ))}
         </ul>
+      )}
+      {selected && (
+        <p className="text-sm">
+          {selected.firstName} {selected.lastName} · {selected.email}
+        </p>
       )}
       {node.children.length > 0 && (
         <ul className="team-org-children m-0 flex list-none flex-row flex-wrap justify-center gap-10 pt-4">

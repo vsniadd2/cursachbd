@@ -1,3 +1,5 @@
+import { teamsRouter } from '../../modules/teams/teams.routes.js'
+import { workspaceRouter } from '../../modules/workspace/workspace.routes.js'
 import { Router } from 'express'
 import { healthRouter } from '../../modules/health/health.routes.js'
 import { authRouter } from '../../modules/auth/auth.routes.js'
@@ -26,3 +28,7 @@ v1Router.use('/departments', departmentsRouter)
 v1Router.use('/notifications', notificationsRouter)
 v1Router.use('/invites', invitesRouter)
 v1Router.use('/permissions', permissionsRouter)
+
+v1Router.use('/workspace', workspaceRouter)
+
+v1Router.use('/teams', teamsRouter)

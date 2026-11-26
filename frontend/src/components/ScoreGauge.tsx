@@ -1,4 +1,3 @@
-import React from 'react'
 import { useTranslation } from 'react-i18next'
 
 export function ScoreGauge({ score }: { score: number }) {
@@ -17,15 +16,35 @@ export function ScoreGauge({ score }: { score: number }) {
         aria-label={t('scoreGauge.aria', { score: s })}
       >
         <defs>
-          <pattern id="gauge-hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <rect width="14" height="14" fill="#fff4ee" />
-            <rect width="6" height="14" fill="#ffbb9b" />
+          <pattern
+            id="gauge-hatch"
+            width="14"
+            height="14"
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)"
+          >
+            <rect width="14" height="14" fill="var(--color-brand-soft)" />
+            <rect width="6" height="14" fill="var(--color-brand-3)" />
           </pattern>
         </defs>
         {s < 100 && (
-          <path d={arc(split, END)} fill="none" stroke="url(#gauge-hatch)" strokeWidth={STROKE} strokeLinecap="round" />
+          <path
+            d={arc(split, END)}
+            fill="none"
+            stroke="url(#gauge-hatch)"
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+          />
         )}
-        {s > 0 && <path d={arc(START, split)} fill="none" stroke="#ff6b2c" strokeWidth={STROKE} strokeLinecap="round" />}
+        {s > 0 && (
+          <path
+            d={arc(START, split)}
+            fill="none"
+            stroke="var(--color-brand)"
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+          />
+        )}
         <text
           x={CX}
           y={CY + 10}
@@ -38,7 +57,14 @@ export function ScoreGauge({ score }: { score: number }) {
         >
           {s}
         </text>
-        <text x={CX} y={CY + 50} textAnchor="middle" fontSize="12.5" fill="#4b4b52" fontFamily="Inter, sans-serif">
+        <text
+          x={CX}
+          y={CY + 50}
+          textAnchor="middle"
+          fontSize="12.5"
+          fill="#4b4b52"
+          fontFamily="Inter, sans-serif"
+        >
           {t('scoreGauge.scale')}
         </text>
       </svg>

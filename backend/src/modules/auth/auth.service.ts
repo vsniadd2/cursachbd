@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import type { Prisma } from '@prisma/client'
 import { ActivityAction } from '@prisma/client'
-import { prisma } from '../../lib/prisma.js'
+import { rawPrisma as prisma } from '../../lib/prisma.js'
 import { env } from '../../config/env.js'
 import { ApiError } from '../../utils/api-error.js'
 import type { AuthTokens, JwtPayload, SafeUser } from './auth.types.js'
@@ -32,6 +32,7 @@ function hashRefreshToken(token: string): string {
 }
 
 function toSafeUser(user: {
+  teamId?: string | null
   id: string
   email: string
   firstName: string
@@ -44,6 +45,7 @@ function toSafeUser(user: {
   const rolePerms = parsePermissions(user.role.permissions)
   const extra = parsePermissions(user.extraPermissions)
   return {
+    teamId: user.teamId ?? null,
     id: user.id,
     email: user.email,
     firstName: user.firstName,
@@ -77,6 +79,7 @@ async function issueRefreshToken(userId: string): Promise<string> {
 }
 
 async function authBundle(user: {
+  teamId?: string | null
   id: string
   email: string
   firstName: string
@@ -108,24 +111,69 @@ export async function register(input: RegisterInput): Promise<AuthTokens> {
     throw new ApiError(409, 'Email already registered')
   }
 
-  const employeeRole = await prisma.role.findUnique({ where: { name: 'EMPLOYEE' } })
-  if (!employeeRole) {
-    throw new ApiError(500, 'Default role not configured. Run database seed.')
-  }
-
   const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS)
   const publicCode = await generateUniquePublicCode(prisma)
-
-  const user = await prisma.user.create({
-    data: {
-      email: input.email,
-      passwordHash,
-      firstName: input.firstName,
-      lastName: input.lastName,
-      publicCode,
-      roleId: employeeRole.id,
-    },
-    include: { role: true },
+  const user = await prisma.$transaction(async (tx) => {
+    const invite = input.inviteToken
+      ? await tx.teamInvite.findUnique({ where: { tokenHash: hashRefreshToken(input.inviteToken) } })
+      : null
+    if (
+      input.inviteToken &&
+      (!invite ||
+        invite.status !== 'PENDING' ||
+        invite.expiresAt <= new Date() ||
+        (invite.email && invite.email !== input.email))
+    )
+      throw new ApiError(400, 'Invite invalid, expired or intended for another email')
+    let teamId: string | null = invite?.teamId ?? null
+    let roleId: string
+    if (!invite && input.accountType === 'BUSINESS') {
+      if (!input.businessName) throw new ApiError(400, 'Business name is required')
+      const team = await tx.team.create({ data: { name: input.businessName } })
+      teamId = team.id
+      const admin = await tx.role.create({ data: { teamId, name: 'ADMIN', permissions: ['*'] } })
+      await tx.role.create({
+        data: {
+          teamId,
+          name: 'EMPLOYEE',
+          permissions: [
+            'clients:read',
+            'projects:read',
+            'tasks:read',
+            'tasks:write',
+            'users:read',
+            'roles:read',
+          ],
+        },
+      })
+      roleId = admin.id
+    } else {
+      let employee = await tx.role.findFirst({ where: { name: 'EMPLOYEE', teamId } })
+      if (!employee) employee = await tx.role.create({ data: { name: 'EMPLOYEE', teamId, permissions: [] } })
+      roleId = invite?.roleId ?? employee.id
+    }
+    const created = await tx.user.create({
+      data: {
+        email: input.email,
+        passwordHash,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        publicCode,
+        teamId,
+        roleId,
+        departmentId: invite?.departmentId,
+        extraPermissions: invite ? parsePermissions(invite.extraPermissions) : [],
+      },
+      include: { role: true },
+    })
+    if (invite) {
+      const consumed = await tx.teamInvite.updateMany({
+        where: { id: invite.id, status: 'PENDING' },
+        data: { status: 'ACCEPTED', provisionedUserId: created.id },
+      })
+      if (consumed.count !== 1) throw new ApiError(409, 'Invite already accepted')
+    }
+    return created
   })
 
   await prisma.activityLog.create({
@@ -182,11 +230,12 @@ export async function refreshSession(refreshToken: string): Promise<AuthTokens> 
     throw new ApiError(401, 'User inactive')
   }
 
-  await prisma.refreshToken.update({
-    where: { id: stored.id },
+  const consumed = await prisma.refreshToken.updateMany({
+    where: { id: stored.id, revokedAt: null, expiresAt: { gt: new Date() } },
     data: { revokedAt: new Date() },
   })
 
+  if (consumed.count !== 1) throw new ApiError(401, 'Refresh token already used')
   return authBundle(stored.user)
 }
 
@@ -242,6 +291,13 @@ export async function updateProfile(userId: string, input: UpdateProfileInput): 
     data.passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_ROUNDS)
   }
 
+  if (input.newPassword) {
+    await prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    })
+  }
+
   const updated = await prisma.user.update({
     where: { id: userId },
     data,
@@ -262,7 +318,7 @@ export async function updateProfile(userId: string, input: UpdateProfileInput): 
 
 export function verifyToken(token: string): JwtPayload {
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET)
+    const decoded = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] })
     if (typeof decoded !== 'object' || decoded === null || !('sub' in decoded)) {
       throw new ApiError(401, 'Invalid token')
     }

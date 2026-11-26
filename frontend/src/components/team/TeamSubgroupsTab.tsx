@@ -1,3 +1,5 @@
+import { apiClient } from '@/lib/api/client'
+import { errorText, useWords } from '@/lib/product'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PageSection } from '@/components/app/PageSection'
@@ -9,6 +11,10 @@ import { useAuth } from '@/contexts/AuthContext'
 import { buildDeptTree, DeptTree } from '@/components/team/DeptTree'
 
 export function TeamSubgroupsTab() {
+  const w = useWords()
+  const [error, setError] = useState('')
+  const [editing, setEditing] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
   const { t } = useTranslation('pages')
   const { user } = useAuth()
   const canWrite = userCan(user, 'users:write', '*')
@@ -24,7 +30,10 @@ export function TeamSubgroupsTab() {
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const items = await fetchDepartments()
+      const items = await fetchDepartments().catch((e) => {
+        setError(errorText(e))
+        return []
+      })
       if (!cancelled) setDepartments(items)
     })()
     return () => {
@@ -38,10 +47,32 @@ export function TeamSubgroupsTab() {
     if (!subgroupName.trim()) return
     setSaving(true)
     try {
-      await createDepartment({ name: subgroupName.trim(), parentId: parentId || null })
+      if (editing)
+        await apiClient.patch(`/departments/${editing}`, {
+          name: subgroupName.trim(),
+          parentId: parentId || null,
+        })
+      else await createDepartment({ name: subgroupName.trim(), parentId: parentId || null })
+      setEditing(null)
       setSubgroupName('')
       setParentId('')
       await reload()
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function removeDepartment() {
+    setSaving(true)
+    setError('')
+    try {
+      await apiClient.delete(`/departments/${deleting}`)
+      setDeleting(null)
+      await reload()
+    } catch (e) {
+      setError(errorText(e))
     } finally {
       setSaving(false)
     }
@@ -84,12 +115,67 @@ export function TeamSubgroupsTab() {
               ))}
             </select>
           </div>
-          <Button type="button" variant="brand" disabled={saving || !subgroupName.trim()} onClick={() => void addSubgroup()}>
-            {t('team.createSubgroup')}
+          <Button
+            type="button"
+            variant="brand"
+            disabled={saving || !subgroupName.trim()}
+            onClick={() => void addSubgroup()}
+          >
+            {editing ? w('Сохранить', 'Save') : t('team.createSubgroup')}
           </Button>
         </div>
       )}
+      {error && (
+        <p role="alert" className="text-red-700">
+          {error}
+        </p>
+      )}
+      {deleting && (
+        <div role="alertdialog">
+          <p>{w('Удалить отдел навсегда?', 'Delete department permanently?')}</p>
+          <Button disabled={saving} onClick={() => void removeDepartment()}>
+            {w('Удалить навсегда', 'Delete permanently')}
+          </Button>{' '}
+          <Button variant="outline" onClick={() => setDeleting(null)}>
+            {w('Отмена', 'Cancel')}
+          </Button>
+        </div>
+      )}
+      {editing && (
+        <Button
+          variant="outline"
+          onClick={() => {
+            setEditing(null)
+            setSubgroupName('')
+            setParentId('')
+          }}
+        >
+          {w('Отмена редактирования', 'Cancel editing')}
+        </Button>
+      )}
       <DeptTree nodes={tree} />
+      {canWrite &&
+        departments.map((d) => (
+          <div className="flex items-center justify-between gap-2" key={d.id}>
+            <span className="text-sm">{d.name}</span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEditing(d.id)
+                  setSubgroupName(d.name)
+                  setParentId(d.parentId ?? '')
+                }}
+              >
+                {w('Изменить', 'Edit')}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setDeleting(d.id)}>
+                {w('Удалить', 'Delete')}
+              </Button>
+            </div>
+          </div>
+        ))}
     </PageSection>
   )
 }

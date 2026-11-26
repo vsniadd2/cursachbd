@@ -394,7 +394,11 @@ const en = {
       emptyTitle: 'No leads yet',
       emptyDesc: 'Create your first lead with Add lead.',
     },
-    customers: { title: 'Customers', description: 'Active accounts and relationships', empty: 'No customers' },
+    customers: {
+      title: 'Customers',
+      description: 'Active accounts and relationships',
+      empty: 'No customers',
+    },
     deals: { title: 'Deals', description: 'Projects linked to revenue', empty: 'No deals' },
     tasks: { title: 'Tasks', description: 'Work items across projects', open: 'Open', done: 'Done' },
     automationExtra: {
@@ -404,9 +408,9 @@ const en = {
     },
     helpFaq: {
       q1: 'How do I add a lead?',
-      a1: 'Open Leads, enter a company name and click Add lead.',
+      a1: 'Open Leads, click Create, fill in the company and contact details, then Save.',
       q2: 'How does the pipeline work?',
-      a2: 'Click a deal card to advance it to the next stage.',
+      a2: 'Use the status selector on a deal card to move to any stage, including cancellation.',
       q3: 'Where are invoices?',
       a3: 'Revenue lists all invoices synced from the API.',
     },
@@ -432,7 +436,6 @@ const en = {
     integrations: { title: 'Integrations', description: 'Connected tools' },
     pipeline: { title: 'Pipeline board', description: 'Click a card to advance stage' },
     help: { title: 'Help center', description: 'Quick answers' },
-    feedback: { title: 'Feedback', description: 'Tell us what to improve' },
     pricing: {
       title: 'Flexora pricing',
       description: 'Starter is the default plan. Workspace admins get Enterprise.',
@@ -490,8 +493,7 @@ const en = {
       aria: 'Score {{score}} of 100',
       label: 'Score',
       scale: 'For sales 100 Point',
-      footer:
-        'A scalable sales pipeline delivering consistent growth, predictable revenue, and business confidence.',
+      footer: 'This score is calculated from current deals and changes with their statuses.',
     },
     leadActivity: {
       title: 'Lead Activity by Time',

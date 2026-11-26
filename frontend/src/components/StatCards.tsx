@@ -1,13 +1,17 @@
-import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { MoreHorizontal, ArrowUp } from 'lucide-react'
+import { ArrowUp } from 'lucide-react'
 
-export function StatCards() {
+export function StatCards({ metrics }: { metrics?: { title: string; value: string; caption: string }[] }) {
   const { t } = useTranslation('components')
-  const { t: tc } = useTranslation('common')
 
   const cards = [
-    { title: t('statCards.c1t'), value: '$42,860', delta: '14%', caption: t('statCards.c1c'), chart: <Bars /> },
+    {
+      title: t('statCards.c1t'),
+      value: '$42,860',
+      delta: '14%',
+      caption: t('statCards.c1c'),
+      chart: <Bars />,
+    },
     { title: t('statCards.c2t'), value: '1,284', delta: '9%', caption: t('statCards.c2c'), chart: <Spark /> },
     { title: t('statCards.c3t'), value: '236', delta: '12%', caption: t('statCards.c3c'), chart: <Ring /> },
     {
@@ -22,34 +26,36 @@ export function StatCards() {
 
   return (
     <div className="mt-[19px] grid grid-cols-1 gap-[16px] sm:grid-cols-2 xl:grid-cols-4">
-      {cards.map((c, i) => (
-        <article
-          key={i}
-          className="flex h-[140px] flex-col rounded-[12px] border border-line bg-surface px-[12px] pt-[12px] pb-[12px]"
-        >
-          <div className="flex items-center justify-between">
-            <h3 className="text-[12.5px] text-ink-2">{c.title}</h3>
-            <button aria-label={tc('more')} className="text-ink-2">
-              <MoreHorizontal className="size-[15px]" strokeWidth={1.8} />
-            </button>
-          </div>
-          <div className="flex flex-1 items-center justify-between gap-2 overflow-hidden">
-            <p className="text-[27px] leading-none tracking-[-0.01em] tabular">{c.value}</p>
-            <div className="shrink-0">{c.chart}</div>
-          </div>
-          <div className="flex items-center gap-[7px]">
-            <span
-              className={`inline-flex items-center gap-[2px] rounded-[4px] px-[6px] py-[3px] text-[9.5px] tabular ${
-                c.tone === 'brand' ? 'bg-brand-soft text-brand' : 'bg-pos-soft text-pos'
-              }`}
-            >
-              <ArrowUp className="size-[9px]" strokeWidth={2.2} />
-              {c.delta}
-            </span>
-            <span className="truncate text-[12.5px] text-ink-2">{c.caption}</span>
-          </div>
-        </article>
-      ))}
+      {cards.map((base, i) => {
+        const c = metrics ? { ...base, ...metrics[i], delta: '' } : base
+        return (
+          <article
+            key={i}
+            className="flex h-[140px] flex-col rounded-[12px] border border-line bg-surface px-[12px] pt-[12px] pb-[12px]"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-[12.5px] text-ink-2">{c.title}</h3>
+            </div>
+            <div className="flex flex-1 items-center justify-between gap-2 overflow-hidden">
+              <p className="text-[27px] leading-none tracking-[-0.01em] tabular">{c.value}</p>
+              <div className="shrink-0">{c.chart}</div>
+            </div>
+            <div className="flex items-center gap-[7px]">
+              {c.delta && (
+                <span
+                  className={`inline-flex items-center gap-[2px] rounded-[4px] px-[6px] py-[3px] text-[9.5px] tabular ${
+                    c.tone === 'brand' ? 'bg-brand-soft text-brand' : 'bg-pos-soft text-pos'
+                  }`}
+                >
+                  <ArrowUp className="size-[9px]" strokeWidth={2.2} />
+                  {c.delta}
+                </span>
+              )}
+              <span className="truncate text-[12.5px] text-ink-2">{c.caption}</span>
+            </div>
+          </article>
+        )
+      })}
     </div>
   )
 }
@@ -60,8 +66,8 @@ function Bars() {
     <svg width="54" height="44" viewBox="0 0 54 44" className="-mr-1">
       <defs>
         <linearGradient id="bar-fade" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stopColor="#ff6b2c" />
-          <stop offset="1" stopColor="#ff6b2c" stopOpacity="0.15" />
+          <stop offset="0" stopColor="var(--color-brand)" />
+          <stop offset="1" stopColor="var(--color-brand)" stopOpacity="0.15" />
         </linearGradient>
       </defs>
       <line x1="0" x2="54" y1="43.5" y2="43.5" stroke="#efeff1" />
@@ -78,13 +84,19 @@ function Spark() {
     <svg width="78" height="46" viewBox="0 0 78 46">
       <defs>
         <linearGradient id="spark-fill" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0" stopColor="#ff6b2c" stopOpacity="0.22" />
-          <stop offset="1" stopColor="#ff6b2c" stopOpacity="0" />
+          <stop offset="0" stopColor="var(--color-brand)" stopOpacity="0.22" />
+          <stop offset="1" stopColor="var(--color-brand)" stopOpacity="0" />
         </linearGradient>
       </defs>
       <path d={`${d} L74 46 L2 46 Z`} fill="url(#spark-fill)" />
-      <path d={d} fill="none" stroke="#ff7a40" strokeWidth="1.1" />
-      <path d="M70 6 L74.5 5.5 L74 10" fill="none" stroke="#ff7a40" strokeWidth="1.1" strokeLinecap="round" />
+      <path d={d} fill="none" stroke="var(--color-brand)" strokeWidth="1.1" />
+      <path
+        d="M70 6 L74.5 5.5 L74 10"
+        fill="none"
+        stroke="var(--color-brand)"
+        strokeWidth="1.1"
+        strokeLinecap="round"
+      />
     </svg>
   )
 }
@@ -94,13 +106,13 @@ function Ring() {
   const c = 2 * Math.PI * r
   return (
     <svg width="44" height="44" viewBox="0 0 44 44" className="mr-1">
-      <circle cx="22" cy="22" r={r} fill="none" stroke="#ffd9c7" strokeWidth="5" />
+      <circle cx="22" cy="22" r={r} fill="none" stroke="var(--color-brand-4)" strokeWidth="5" />
       <circle
         cx="22"
         cy="22"
         r={r}
         fill="none"
-        stroke="#ff6b2c"
+        stroke="var(--color-brand)"
         strokeWidth="5"
         strokeDasharray={`${c * 0.74} ${c}`}
         transform="rotate(-80 22 22)"
@@ -122,7 +134,7 @@ function Wave() {
             width="1.4"
             height={v}
             rx="0.7"
-            fill={i % 3 === 0 || i > 16 ? '#ffb796' : '#ff6b2c'}
+            fill={i % 3 === 0 || i > 16 ? 'var(--color-brand-3)' : 'var(--color-brand)'}
           />
         ) : null,
       )}
